@@ -1,0 +1,134 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+body {
+    background: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 51, 102, 0.15);
+    padding: 30px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    border-bottom: 3px solid #C41E3A;
+    padding-bottom: 15px;
+}
+
+.header h1 {
+    color: #003366;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
+
+.header .sub {
+    color: #C41E3A;
+    font-weight: 500;
+    margin-left: auto;
+    font-style: italic;
+}
+
+.event-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+}
+
+.event-table thead th {
+    text-align: left;
+    padding: 15px 20px;
+    background: #003366;
+    color: white;
+    font-weight: 500;
+    font-size: 16px;
+    border-radius: 12px 12px 0 0;
+}
+
+.event-table thead th:first-child {
+    border-radius: 12px 0 0 0;
+}
+.event-table thead th:last-child {
+    border-radius: 0 12px 0 0;
+}
+
+.event-table tbody tr {
+    background: white;
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 51, 102, 0.08);
+}
+
+.event-table tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(196, 30, 58, 0.15);
+}
+
+.event-table td {
+    padding: 18px 20px;
+    font-size: 15px;
+    border: none;
+}
+
+.event-table td:first-child {
+    border-radius: 12px 0 0 12px;
+}
+.event-table td:last-child {
+    border-radius: 0 12px 12px 0;
+}
+
+.event-code {
+    background: #eef4ff;
+    color: #003366;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 30px;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.detail-btn {
+    background: #C41E3A;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 4px 8px rgba(196, 30, 58, 0.3);
+}
+
+.detail-btn:hover {
+    background: #a01830;
+    box-shadow: 0 6px 12px rgba(196, 30, 58, 0.4);
+}
+
+.footer {
+    margin-top: 30px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    border-top: 1px dashed #ccc;
+    padding-top: 20px;
+}
