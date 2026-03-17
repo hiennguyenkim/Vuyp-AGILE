@@ -111,6 +111,8 @@ function editEvent(i) {
   document.getElementById("max").value = e.max;
 
   document.getElementById("eventIndex").value = i;
+  
+  document.getElementById("btnDeleteDetail").style.display = "block";
 }
 
 let deleteIndex = null;
