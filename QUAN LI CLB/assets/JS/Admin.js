@@ -70,6 +70,8 @@ form.addEventListener("submit", function (e) {
 
   form.reset();
   document.getElementById("eventIndex").value = "";
+
+  document.getElementById("btnDeleteDetail").style.display = "none";
 });
 
 function renderEvents() {
@@ -126,6 +128,13 @@ renderEvents();
 
 document.getElementById("confirmDelete").onclick = function () {
   if (deleteIndex !== null) {
+    
+  if (document.getElementById("eventIndex").value == deleteIndex) {
+      document.getElementById("eventForm").reset();
+      document.getElementById("eventIndex").value = "";
+      document.getElementById("btnDeleteDetail").style.display = "none";
+    }
+    
     events.splice(deleteIndex, 1);
     saveEvents(events);
     renderEvents();
@@ -138,3 +147,10 @@ document.getElementById("confirmDelete").onclick = function () {
 document.getElementById("cancelDelete").onclick = function () {
   document.getElementById("deleteModal").style.display = "none";
 };
+
+function deleteFromDetail() {
+  let index = document.getElementById("eventIndex").value;
+  if (index !== "") {
+    deleteEvent(index); 
+  }
+}
