@@ -43,18 +43,7 @@ form.addEventListener("submit", function (e) {
     max,
     registered: 0,
   };
-
-  function showToast(message) {
-    let toast = document.getElementById("toast");
-
-    toast.innerText = message;
-    toast.classList.add("show");
-
-    setTimeout(() => {
-      toast.classList.remove("show");
-    }, 3000);
-  }
-
+  
   if (index === "") {
     events.push(event);
     showToast("Tạo sự kiện thành công");
@@ -138,10 +127,20 @@ document.getElementById("confirmDelete").onclick = function () {
     events.splice(deleteIndex, 1);
     saveEvents(events);
     renderEvents();
+
+    showToast("Xóa sự kiện thành công");
   }
 
   document.getElementById("deleteModal").style.display = "none";
   deleteIndex = null;
+};
+
+window.onclick = function (event) {
+  let modal = document.getElementById("deleteModal");
+  if (event.target == modal) {
+    modal.style.display = "none";
+    deleteIndex = null;
+  }
 };
 
 document.getElementById("cancelDelete").onclick = function () {
@@ -154,3 +153,14 @@ function deleteFromDetail() {
     deleteEvent(index); 
   }
 }
+
+ function showToast(message) {
+    let toast = document.getElementById("toast");
+
+    toast.innerText = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 3000);
+  }
