@@ -27,6 +27,11 @@
     return Number.isFinite(parsed) ? parsed : fallback;
   }
 
+  function parseDateTimeValue(value) {
+    const parsed = Date.parse(normalizeString(value));
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
   function createId(prefix) {
     return `${prefix}-${Date.now().toString(36)}-${Math.random()
       .toString(36)
@@ -153,6 +158,113 @@
     });
   }
 
+  function buildEventValidationMessage(fieldErrors) {
+    if (
+      fieldErrors.name ||
+      fieldErrors.start === "Vui lòng nhập thông tin này." ||
+      fieldErrors.end === "Vui lòng nhập thông tin này." ||
+      fieldErrors.location ||
+      fieldErrors.max === "Vui lòng nhập thông tin này."
+    ) {
+      return "Vui lòng điền đầy đủ các trường bắt buộc.";
+    }
+
+    if (fieldErrors.start || fieldErrors.end) {
+      return "Vui lòng kiểm tra lại mốc thời gian sự kiện.";
+    }
+
+    if (fieldErrors.max) {
+      return "Vui lòng kiểm tra lại số lượng người tham gia tối đa.";
+    }
+
+    return "Vui lòng kiểm tra lại thông tin sự kiện.";
+  }
+
+  function validateEventPayload(payload, currentEvent) {
+    const fieldErrors = {};
+    const requiredFields = ["name", "start", "end", "location", "max"];
+    const now = Date.now();
+    const startValue = normalizeString(payload?.start);
+    const endValue = normalizeString(payload?.end);
+    const maxValue = normalizeString(payload?.max);
+    const currentStartValue = normalizeString(currentEvent?.start);
+    const currentEndValue = normalizeString(currentEvent?.end);
+    const startTime = parseDateTimeValue(startValue);
+    const endTime = parseDateTimeValue(endValue);
+    const startChanged = startValue !== currentStartValue;
+    const endChanged = endValue !== currentEndValue;
+
+    requiredFields.forEach((fieldId) => {
+      if (!normalizeString(payload?.[fieldId])) {
+        fieldErrors[fieldId] = "Vui lòng nhập thông tin này.";
+      }
+    });
+
+    if (!fieldErrors.start && !Number.isFinite(startTime)) {
+      fieldErrors.start = "Thời gian bắt đầu không hợp lệ.";
+    }
+
+    if (!fieldErrors.end && !Number.isFinite(endTime)) {
+      fieldErrors.end = "Thời gian kết thúc không hợp lệ.";
+    }
+
+    if (
+      !fieldErrors.start &&
+      Number.isFinite(startTime) &&
+      (!currentEvent || startChanged) &&
+      startTime < now
+    ) {
+      fieldErrors.start =
+        "Thời gian bắt đầu phải từ thời điểm hiện tại trở đi.";
+    }
+
+    if (
+      !fieldErrors.end &&
+      Number.isFinite(endTime) &&
+      (!currentEvent || endChanged) &&
+      endTime < now
+    ) {
+      fieldErrors.end =
+        "Thời gian kết thúc phải từ thời điểm hiện tại trở đi.";
+    }
+
+    if (
+      !fieldErrors.start &&
+      !fieldErrors.end &&
+      Number.isFinite(startTime) &&
+      Number.isFinite(endTime) &&
+      endTime <= startTime
+    ) {
+      fieldErrors.end = "Thời gian kết thúc phải sau thời gian bắt đầu.";
+    }
+
+    if (!fieldErrors.max) {
+      const parsedMax = Number(maxValue);
+
+      if (!Number.isInteger(parsedMax) || parsedMax <= 0) {
+        fieldErrors.max =
+          "Số lượng người tham gia tối đa phải là số nguyên lớn hơn 0.";
+      }
+    }
+
+    if (
+      currentEvent &&
+      !fieldErrors.max &&
+      Number(maxValue) < normalizeNumber(currentEvent.registered, 0)
+    ) {
+      fieldErrors.max =
+        `Số lượng tối đa không được nhỏ hơn số sinh viên đã đăng ký (${currentEvent.registered}).`;
+    }
+
+    return {
+      fieldErrors,
+      message:
+        Object.keys(fieldErrors).length > 0
+          ? buildEventValidationMessage(fieldErrors)
+          : "",
+    };
+  }
+
   function buildLegacyHistory(rawHistory) {
     const source = Array.isArray(rawHistory) ? rawHistory : [];
 
@@ -219,6 +331,13 @@
   function createEvent(payload) {
     const state = readState();
     const now = new Date().toISOString();
+    const validationResult = validateEventPayload(payload);
+
+    if (validationResult.message) {
+      const error = new Error(validationResult.message);
+      error.fieldErrors = validationResult.fieldErrors;
+      throw error;
+    }
 
     const event = {
       id: createId("event"),
@@ -258,6 +377,14 @@
     }
 
     const currentEvent = state.events[eventIndex];
+    const validationResult = validateEventPayload(payload, currentEvent);
+
+    if (validationResult.message) {
+      const error = new Error(validationResult.message);
+      error.fieldErrors = validationResult.fieldErrors;
+      throw error;
+    }
+
     const updatedEvent = {
       ...currentEvent,
       name: normalizeString(payload?.name),
@@ -361,6 +488,10 @@
     }
 
     return startTime > Date.now();
+  }
+
+  function isActiveEvent(event) {
+    return getEventStatus(event).tone !== "ended";
   }
 
   function registerStudent(eventId, student) {
@@ -478,6 +609,11 @@
     return sortEvents(state.events.filter(isUpcomingEvent));
   }
 
+  function getActiveEvents() {
+    const state = readState();
+    return sortEvents(state.events.filter(isActiveEvent));
+  }
+
   function formatDateTime(value) {
     if (!value) {
       return "Chưa cập nhật";
@@ -515,16 +651,19 @@
     deleteEvent,
     formatDateRange,
     formatDateTime,
+    getActiveEvents,
     getEventById,
     getEventStatus,
     getUpcomingEvents,
     getHistoryEntries,
     isUpcomingEvent,
+    isActiveEvent,
     normalizeString,
     readState,
     registerStudent,
     sortEvents,
     sortRegistrations,
     updateEvent,
+    validateEventPayload,
   };
 })();

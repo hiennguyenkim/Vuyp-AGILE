@@ -36,6 +36,23 @@ function renderDetail() {
   }
 
   const status = window.ClubStorage.getEventStatus(event);
+  const registerAction = status.canRegister
+    ? `
+        <a
+          class="register-btn"
+          href="../student/index.html?eventId=${encodeURIComponent(event.id)}&action=register"
+        >
+          📝 Đăng ký tham gia
+        </a>
+      `
+    : `
+        <span class="register-btn register-btn-disabled">
+          ${status.tone === "ended" ? "Sự kiện đã kết thúc" : "Tạm khóa đăng ký"}
+        </span>
+      `;
+  const ctaDescription = status.canRegister
+    ? "Nhấn đăng ký để chuyển ngay tới form điền thông tin tham gia."
+    : "Sự kiện hiện không nhận thêm đăng ký mới. Bạn vẫn có thể xem lại toàn bộ thông tin bên trên.";
 
   container.innerHTML = `
     <table class="detail-table">
@@ -78,15 +95,10 @@ function renderDetail() {
     <section class="cta-panel">
       <div class="cta-copy">
         <strong>Quan tâm sự kiện này?</strong>
-        <span>Nhấn đăng ký để chuyển ngay tới form điền thông tin tham gia.</span>
+        <span>${escapeHtml(ctaDescription)}</span>
       </div>
       <div class="register-section">
-        <a
-          class="register-btn"
-          href="../student/index.html?eventId=${encodeURIComponent(event.id)}&action=register"
-        >
-          📝 Đăng ký tham gia
-        </a>
+        ${registerAction}
       </div>
     </section>
 

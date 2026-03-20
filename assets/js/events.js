@@ -2,7 +2,7 @@ function renderEmptyState(tbody) {
   tbody.innerHTML = `
     <tr>
       <td colspan="5" style="text-align:center; padding: 28px 20px;">
-        Hiện chưa có sự kiện sắp diễn ra trong hệ thống.
+        Hiện chưa có sự kiện còn hiệu lực trong hệ thống.
         <a href="../admin/index.html" class="detail-btn" style="margin-left: 10px;">
           Tạo sự kiện
         </a>
@@ -12,7 +12,7 @@ function renderEmptyState(tbody) {
 }
 
 function renderEventTable() {
-  const events = window.ClubStorage ? window.ClubStorage.getUpcomingEvents() : [];
+  const events = window.ClubStorage ? window.ClubStorage.getActiveEvents() : [];
   const tbody = document.getElementById("event-list");
   tbody.innerHTML = "";
 

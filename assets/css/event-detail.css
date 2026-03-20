@@ -151,6 +151,22 @@ body {
     transform: scale(0.98);
 }
 
+.register-btn-disabled {
+    background: #d5dde7;
+    color: #51657a;
+    border-color: transparent;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.register-btn-disabled:hover {
+    background: #d5dde7;
+    color: #51657a;
+    border-color: transparent;
+    transform: none;
+    box-shadow: none;
+}
+
 .back-link {
     display: inline-block;
     margin-top: 20px;

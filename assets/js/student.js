@@ -59,9 +59,13 @@ function loadState() {
 }
 
 function renderEvents() {
-  const upcomingEvents = ClubStorage.getUpcomingEvents();
+  loadState();
   const search = document.getElementById("search")?.value.toLowerCase() || "";
-  const filteredEvents = upcomingEvents.filter((event) => {
+  const filteredEvents = events.filter((event) => {
+    if (!ClubStorage.isActiveEvent(event)) {
+      return false;
+    }
+
     return event.name.toLowerCase().includes(search);
   });
 
@@ -105,7 +109,7 @@ function renderEvents() {
     html ||
     `
       <tr>
-        <td colspan="8">Hiện chưa có sự kiện sắp diễn ra phù hợp.</td>
+        <td colspan="8">Hiện chưa có sự kiện còn hiệu lực phù hợp.</td>
       </tr>
     `;
 }
@@ -247,16 +251,16 @@ function registerEvent() {
 
   const payload = {
     studentName: ClubStorage.normalizeString(
-    document.getElementById("studentName").value,
+      document.getElementById("studentName").value,
     ),
     studentId: ClubStorage.normalizeString(
-    document.getElementById("studentId").value,
+      document.getElementById("studentId").value,
     ),
     studentCourse: ClubStorage.normalizeString(
-    document.getElementById("studentCourse").value,
+      document.getElementById("studentCourse").value,
     ),
     studentGender: ClubStorage.normalizeString(
-    document.getElementById("studentGender").value,
+      document.getElementById("studentGender").value,
     ),
   };
   const validationResult = validateRegisterPayload(payload);
@@ -371,6 +375,37 @@ function openRequestedEventFromUrl() {
   }
 }
 
+function syncStudentView() {
+  renderEvents();
+  renderHistory();
+
+  if (!currentEventId) {
+    return;
+  }
+
+  const currentEvent = events.find((event) => event.id === currentEventId);
+
+  if (!currentEvent) {
+    closeRegister();
+    closeModal();
+    currentEventId = null;
+    showToast("Sự kiện bạn đang xem không còn tồn tại", "#850E35");
+    return;
+  }
+
+  if (document.getElementById("detailModal").style.display === "flex") {
+    showDetail(currentEventId);
+  }
+
+  if (
+    document.getElementById("registerModal").style.display === "flex" &&
+    !ClubStorage.getEventStatus(currentEvent).canRegister
+  ) {
+    closeRegister();
+    showToast("Sự kiện hiện không còn nhận đăng ký", "#850E35");
+  }
+}
+
 document.getElementById("menuBtn").onclick = function () {
   document.getElementById("sidebar").classList.toggle("hide");
 };
@@ -418,8 +453,7 @@ window.onclick = function (event) {
 };
 
 window.addEventListener("storage", function () {
-  renderEvents();
-  renderHistory();
+  syncStudentView();
 });
 
 function showToast(message, color = "#850E35", accentColor = "#cf3439") {

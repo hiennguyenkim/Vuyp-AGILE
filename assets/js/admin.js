@@ -12,6 +12,9 @@ const deleteMessage = document.getElementById("deleteMessage");
 const errorBox = document.getElementById("error");
 const successBox = document.getElementById("success");
 const detailSection = document.getElementById("eventDetailSection");
+const startInput = document.getElementById("start");
+const endInput = document.getElementById("end");
+const maxInput = document.getElementById("max");
 const requiredFields = {
   name: "Tên sự kiện",
   start: "Thời gian bắt đầu",
@@ -42,6 +45,11 @@ function loadState() {
   registrations = ClubStorage.sortRegistrations(state.registrations);
 }
 
+function getCurrentEditingEvent() {
+  const eventId = document.getElementById("eventId").value;
+  return events.find((item) => item.id === eventId) || null;
+}
+
 function resetMessages() {
   errorBox.innerText = "";
   successBox.innerText = "";
@@ -67,12 +75,77 @@ function setFieldError(fieldId, message) {
   }
 }
 
+function formatDateTimeLocalValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function getCurrentDateTimeLocalValue() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  return formatDateTimeLocalValue(now);
+}
+
+function pickMinimumDateTime(baseValue, currentValue) {
+  const currentTime = Date.parse(currentValue || "");
+  const baseTime = Date.parse(baseValue || "");
+
+  if (
+    currentValue &&
+    Number.isFinite(currentTime) &&
+    Number.isFinite(baseTime) &&
+    currentTime < baseTime
+  ) {
+    return currentValue;
+  }
+
+  return baseValue;
+}
+
+function collectFormPayload() {
+  return {
+    name: ClubStorage.normalizeString(document.getElementById("name").value),
+    desc: ClubStorage.normalizeString(
+      document.getElementById("description").value,
+    ),
+    speaker: ClubStorage.normalizeString(
+      document.getElementById("speaker").value,
+    ),
+    start: startInput.value,
+    end: endInput.value,
+    location: ClubStorage.normalizeString(
+      document.getElementById("location").value,
+    ),
+    max: maxInput.value,
+  };
+}
+
+function syncDateInputConstraints() {
+  const currentEvent = getCurrentEditingEvent();
+  const nowValue = getCurrentDateTimeLocalValue();
+  const startMin = pickMinimumDateTime(nowValue, currentEvent?.start);
+  const endBaseValue = startInput.value || startMin;
+  const endMin = pickMinimumDateTime(endBaseValue, currentEvent?.end);
+
+  startInput.min = startMin;
+  endInput.min = endMin;
+  maxInput.min = "1";
+  maxInput.step = "1";
+}
+
 function syncInlineValidation(fieldId) {
   loadState();
-  const eventId = document.getElementById("eventId").value;
-  const currentEvent = events.find((item) => item.id === eventId);
+  syncDateInputConstraints();
+  const currentEvent = getCurrentEditingEvent();
   const field = document.getElementById(fieldId);
   const value = field.value.trim();
+  const payload = collectFormPayload();
+  const validationResult = ClubStorage.validateEventPayload(payload, currentEvent);
 
   clearFieldError(fieldId);
 
@@ -82,36 +155,22 @@ function syncInlineValidation(fieldId) {
   }
 
   if (fieldId === "max") {
-    if (Number(value) <= 0) {
-      setFieldError(fieldId, "Số lượng người tham gia tối đa phải lớn hơn 0.");
-      return;
-    }
-
-    if (currentEvent && Number(value) < currentEvent.registered) {
-      setFieldError(
-        fieldId,
-        `Số lượng tối đa không được nhỏ hơn số sinh viên đã đăng ký (${currentEvent.registered}).`,
-      );
+    if (validationResult.fieldErrors.max) {
+      setFieldError(fieldId, validationResult.fieldErrors.max);
       return;
     }
   }
 
   if (fieldId === "start" || fieldId === "end") {
-    const startValue = document.getElementById("start").value;
-    const endValue = document.getElementById("end").value;
+    clearFieldError("start");
     clearFieldError("end");
 
-    if (!endValue) {
-      return;
+    if (validationResult.fieldErrors.start) {
+      setFieldError("start", validationResult.fieldErrors.start);
     }
 
-    if (!startValue) {
-      setFieldError("start", "Vui lòng nhập thông tin này.");
-      return;
-    }
-
-    if (Date.parse(endValue) <= Date.parse(startValue)) {
-      setFieldError("end", "Thời gian kết thúc phải sau thời gian bắt đầu.");
+    if (validationResult.fieldErrors.end) {
+      setFieldError("end", validationResult.fieldErrors.end);
     }
   }
 }
@@ -121,6 +180,7 @@ function resetForm() {
   document.getElementById("eventId").value = "";
   document.getElementById("btnDeleteDetail").style.display = "none";
   clearFieldErrors();
+  syncDateInputConstraints();
 }
 
 function hideDetailPanel() {
@@ -157,11 +217,12 @@ function setEditingEvent(event) {
   document.getElementById("name").value = event.name;
   document.getElementById("description").value = event.desc;
   document.getElementById("speaker").value = event.speaker;
-  document.getElementById("start").value = event.start;
-  document.getElementById("end").value = event.end;
+  startInput.value = event.start;
+  endInput.value = event.end;
   document.getElementById("location").value = event.location;
-  document.getElementById("max").value = event.max;
+  maxInput.value = event.max;
   document.getElementById("btnDeleteDetail").style.display = "block";
+  syncDateInputConstraints();
 }
 
 function updateSummary() {
@@ -288,52 +349,7 @@ function renderRegistrations() {
 }
 
 function validateEventPayload(payload, currentEvent) {
-  const fieldErrors = {};
-
-  Object.keys(requiredFields).forEach((fieldId) => {
-    if (!String(payload[fieldId] ?? "").trim()) {
-      fieldErrors[fieldId] = "Vui lòng nhập thông tin này.";
-    }
-  });
-
-  if (Object.keys(fieldErrors).length > 0) {
-    return {
-      fieldErrors,
-      message: "Vui lòng điền đầy đủ các trường bắt buộc.",
-    };
-  }
-
-  if (Number(payload.max) <= 0) {
-    return {
-      fieldErrors: {
-        max: "Số lượng người tham gia tối đa phải lớn hơn 0.",
-      },
-      message: "Vui lòng kiểm tra lại thông tin số lượng tham gia.",
-    };
-  }
-
-  if (Date.parse(payload.end) <= Date.parse(payload.start)) {
-    return {
-      fieldErrors: {
-        end: "Thời gian kết thúc phải sau thời gian bắt đầu.",
-      },
-      message: "Vui lòng kiểm tra lại mốc thời gian sự kiện.",
-    };
-  }
-
-  if (currentEvent && Number(payload.max) < currentEvent.registered) {
-    return {
-      fieldErrors: {
-        max: `Số lượng tối đa không được nhỏ hơn số sinh viên đã đăng ký (${currentEvent.registered}).`,
-      },
-      message: "Vui lòng kiểm tra lại số lượng người tham gia tối đa.",
-    };
-  }
-
-  return {
-    fieldErrors: {},
-    message: "",
-  };
+  return ClubStorage.validateEventPayload(payload, currentEvent);
 }
 
 form.addEventListener("submit", function (event) {
@@ -342,23 +358,10 @@ form.addEventListener("submit", function (event) {
   clearFieldErrors();
   loadState();
 
+  syncDateInputConstraints();
   const eventId = document.getElementById("eventId").value;
-  const payload = {
-    name: ClubStorage.normalizeString(document.getElementById("name").value),
-    desc: ClubStorage.normalizeString(
-      document.getElementById("description").value,
-    ),
-    speaker: ClubStorage.normalizeString(
-      document.getElementById("speaker").value,
-    ),
-    start: document.getElementById("start").value,
-    end: document.getElementById("end").value,
-    location: ClubStorage.normalizeString(
-      document.getElementById("location").value,
-    ),
-    max: document.getElementById("max").value,
-  };
-  const currentEvent = events.find((item) => item.id === eventId);
+  const payload = collectFormPayload();
+  const currentEvent = getCurrentEditingEvent();
   const validationResult = validateEventPayload(payload, currentEvent);
 
   if (validationResult.message) {
@@ -369,23 +372,30 @@ form.addEventListener("submit", function (event) {
     return;
   }
 
-  if (eventId) {
-    const result = ClubStorage.updateEvent(eventId, payload);
-    recentlySavedEventId = result.event.id;
-    showToast("Cập nhật thành công");
-    successBox.innerText = "Cập nhật thành công.";
-    renderDetailPanel(result.event.id);
-    resetForm();
-  } else {
-    const result = ClubStorage.createEvent(payload);
-    recentlySavedEventId = result.event.id;
-    showToast("Tạo sự kiện thành công");
-    resetForm();
-    successBox.innerText = "Tạo sự kiện thành công.";
-  }
+  try {
+    if (eventId) {
+      const result = ClubStorage.updateEvent(eventId, payload);
+      recentlySavedEventId = result.event.id;
+      showToast("Cập nhật thành công");
+      successBox.innerText = "Cập nhật thành công.";
+      renderDetailPanel(result.event.id);
+      resetForm();
+    } else {
+      const result = ClubStorage.createEvent(payload);
+      recentlySavedEventId = result.event.id;
+      showToast("Tạo sự kiện thành công");
+      resetForm();
+      successBox.innerText = "Tạo sự kiện thành công.";
+    }
 
-  loadState();
-  renderEvents();
+    loadState();
+    renderEvents();
+  } catch (error) {
+    Object.entries(error.fieldErrors || {}).forEach(([fieldId, message]) => {
+      setFieldError(fieldId, message);
+    });
+    errorBox.innerText = error.message;
+  }
 });
 
 function editEvent(eventId) {
@@ -477,7 +487,8 @@ document
   });
 
 Object.keys(requiredFields).forEach((fieldId) => {
-  document.getElementById(fieldId).addEventListener("input", function () {
+  const field = document.getElementById(fieldId);
+  const syncValidation = function () {
     syncInlineValidation(fieldId);
 
     const hasInlineErrors = Object.values(fieldErrorElements).some((element) => {
@@ -487,7 +498,10 @@ Object.keys(requiredFields).forEach((fieldId) => {
     if (!hasInlineErrors) {
       errorBox.innerText = "";
     }
-  });
+  };
+
+  field.addEventListener("input", syncValidation);
+  field.addEventListener("change", syncValidation);
 });
 
 document.getElementById("confirmDelete").onclick = confirmDelete;
@@ -512,6 +526,7 @@ window.onclick = function (event) {
 window.addEventListener("storage", function () {
   loadState();
   renderEvents();
+  syncDateInputConstraints();
 });
 
 function showToast(message) {
@@ -526,3 +541,4 @@ function showToast(message) {
 
 loadState();
 renderEvents();
+syncDateInputConstraints();
