@@ -1,36 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách sự kiện - ĐH Sư phạm TP.HCM</title>
-    <link rel="stylesheet" href="css/index.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📋 SỰ KIỆN CLB - ĐH SƯ PHẠM TP.HCM</h1>
-            <span class="sub">Chất lượng - Sáng tạo - Nhân văn</span>
-        </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý CLB Sự kiện</title>
+    <link rel="stylesheet" href="assets/css/home.css" />
+  </head>
+  <body>
+    <main class="home-shell">
+      <section class="hero">
+        <img src="assets/images/hcmue.png" alt="HCMUE" class="hero-logo" />
+        <p class="eyebrow">He thong quan ly CLB su kien</p>
+        <h1>Quản lý Câu lạc bộ Sự kiện</h1>
+        <p class="hero-copy">
+          Cấu trúc dự án đã được tách theo vai trò sử dụng và nhóm tài nguyên
+          dùng chung để dễ bảo trì, mở rộng và demo đề tài.
+        </p>
+      </section>
 
-        <table class="event-table">
-            <thead>
-                <tr>
-                    <th>Mã sự kiện</th>
-                    <th>Tên sự kiện</th>
-                    <th>Thời gian</th>
-                    <th>Địa điểm</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="event-list"></tbody>
-        </table>
+      <section class="card-grid">
+        <a class="nav-card" href="pages/events/index.html">
+          <strong>Trang sự kiện</strong>
+          <span>Xem danh sách và chi tiết các sự kiện đang có trong hệ thống.</span>
+        </a>
 
-        <div class="footer">
-            <span>🏫 Trường Đại học Sư phạm Thành phố Hồ Chí Minh</span>
-        </div>
-    </div>
+        <a class="nav-card" href="pages/student/index.html">
+          <strong>Phân hệ sinh viên</strong>
+          <span>Tra cứu sự kiện, đăng ký tham gia và xem lịch sử đăng ký.</span>
+        </a>
 
-    <script src="js/index.js"></script>
-</body>
+        <a class="nav-card" href="pages/admin/index.html">
+          <strong>Phân hệ admin</strong>
+          <span>CRUD sự kiện và theo dõi dữ liệu đăng ký của sinh viên.</span>
+        </a>
+      </section>
+    </main>
+  </body>
 </html>

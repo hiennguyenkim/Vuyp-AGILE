@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trang sinh viên</title>
+
+    <link rel="stylesheet" href="../../assets/css/student.css" />
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="logo-area">
+        <img src="../../assets/images/hcmue.png" class="logo" />
+      </div>
+
+      <button id="menuBtn">☰</button>
+
+      <div class="title">QUẢN LÝ CÂU LẠC BỘ SỰ KIỆN</div>
+    </header>
+
+    <div class="container">
+      <!-- SIDEBAR -->
+
+      <div class="sidebar" id="sidebar">
+        <div class="student-box" onclick="toggleStudentMenu()">
+          <div class="student-left">
+            <span class="student-icon">👤</span>
+            Sinh viên
+          </div>
+
+          <div class="arrow">▲</div>
+        </div>
+
+        <div id="studentMenu">
+          <div class="menu-item active" onclick="showEvents()">
+            Danh sách sự kiện
+          </div>
+
+          <div class="menu-item" onclick="showHistory()">Lịch sử đăng ký</div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+
+      <div class="content">
+        <div id="eventList">
+          <h2>Danh sách sự kiện</h2>
+
+          <div class="search-box">
+            <input id="search" placeholder="Nhập tên để tìm kiếm" />
+
+            <button onclick="renderEvents()">Tìm kiếm</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>TÊN SỰ KIỆN</th>
+                  <th>MÃ SỰ KIỆN</th>
+                  <th>THỜI GIAN</th>
+                  <th>ĐỊA ĐIỂM</th>
+                  <th>SỐ LƯỢNG</th>
+                  <th>TRẠNG THÁI</th>
+                  <th>HÀNH ĐỘNG</th>
+                </tr>
+              </thead>
+
+              <tbody id="eventTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+
+        <div id="history" style="display: none">
+          <h2>Lịch sử đăng ký</h2>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã sự kiện</th>
+                  <th>Tên sự kiện</th>
+                  <th>Thời gian sự kiện</th>
+                  <th>Địa điểm</th>
+                  <th>Họ tên</th>
+                  <th>MSSV</th>
+                  <th>Thời gian đăng ký</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+
+              <tbody id="historyList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CHI TIẾT -->
+
+    <div id="detailModal" class="modal">
+      <div class="modal-box">
+        <span class="close" onclick="closeModal()">✕</span>
+
+        <h2 id="detailName"></h2>
+
+        <div class="event-desc" id="detailDesc"></div>
+
+        <div class="event-row">
+          <label>Mã sự kiện:</label>
+          <span id="detailCode"></span>
+        </div>
+
+        <div class="event-row">
+          <label>Diễn giả:</label>
+          <span id="detailSpeaker"></span>
+        </div>
+
+        <div class="event-row">
+          <label>Thời gian:</label>
+          <span id="detailTime"></span>
+        </div>
+
+        <div class="event-row">
+          <label>Địa điểm:</label>
+          <span id="detailLocation"></span>
+        </div>
+
+        <div class="event-row slots">
+          <label>Số lượng:</label>
+          <span id="detailMax"></span>
+        </div>
+
+        <div class="event-row">
+          <label>Trạng thái:</label>
+          <span id="detailStatus"></span>
+        </div>
+
+        <button class="register-btn" onclick="openRegister()">
+          Đăng ký tham gia
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL ĐĂNG KÝ -->
+
+    <div id="registerModal" class="modal">
+      <div class="modal-box">
+        <span class="close" onclick="closeRegister()">✕</span>
+
+        <h2>Đăng ký sự kiện</h2>
+
+        <form id="registerForm" novalidate>
+          <div class="form-group">
+            <label>Họ tên <span class="required">*</span></label>
+            <input type="text" id="studentName" required />
+            <div id="studentNameError" class="field-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label>MSSV <span class="required">*</span></label>
+            <input type="text" id="studentId" required />
+            <div id="studentIdError" class="field-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Khóa <span class="required">*</span></label>
+            <input type="text" id="studentCourse" required />
+            <div id="studentCourseError" class="field-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Giới tính <span class="required">*</span></label>
+
+            <select id="studentGender" required>
+              <option value="">Chọn giới tính</option>
+              <option>Nam</option>
+              <option>Nữ</option>
+              <option>Khác</option>
+            </select>
+            <div id="studentGenderError" class="field-error"></div>
+          </div>
+
+          <p id="error" class="error"></p>
+
+          <button type="submit" class="submit-btn">Đăng ký</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+    <script src="../../assets/js/storage.js"></script>
+    <script src="../../assets/js/student.js"></script>
+  </body>
+</html>

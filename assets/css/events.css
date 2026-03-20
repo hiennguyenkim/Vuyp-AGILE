@@ -74,6 +74,7 @@ body {
     border-radius: 16px;
     transition: all 0.2s ease;
     box-shadow: 0 4px 10px rgba(0, 51, 102, 0.08);
+    cursor: pointer;
 }
 
 .event-table tbody tr:hover {
