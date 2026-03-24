@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vé QR Sinh viên - HCMUE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f2f5 0%, #e6e9f0 100%);
+            padding: 20px;
+        }
+
+        /* Container chính */
+        .ticket-card {
+            background: white;
+            padding: 30px 25px;
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 5px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 360px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0, 51, 102, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header với màu sắc HCMUE (xanh dương - đỏ) */
+        .header {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #c8102e;
+            position: relative;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #003366;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #c8102e;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Logo HCMUE với màu đỏ */
+        .university-badge {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #003366 0%, #c8102e 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 4px 10px rgba(0, 51, 102, 0.3);
+            position: relative;
+        }
+
+        .university-badge span {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'Times New Roman', serif;
+        }
+
+        /* Input field */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #003366;
+            margin-bottom: 8px;
+            margin-left: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            outline: none;
+            background: #fafafa;
+        }
+
+        input:focus {
+            border-color: #c8102e;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+        }
+
+        /* Button với màu đỏ đặc trưng */
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #c8102e 0%, #a00c26 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            font-family: inherit;
+            box-shadow: 0 4px 10px rgba(200, 16, 46, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(200, 16, 46, 0.3);
+            background: linear-gradient(135deg, #a00c26 0%, #c8102e 100%);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* QR Code container */
+        .qr-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 10px 0 15px;
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .qr-container.has-qr {
+            border-color: #003366;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.05);
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+        }
+
+        /* MSSV display */
+        .mssv-label {
+            margin-top: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #003366;
+            background: linear-gradient(135deg, #f8f9fa 0%, #fff5f5 100%);
+            padding: 10px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+            word-break: break-word;
+            border-left: 4px solid #c8102e;
+        }
+
+        /* Footer */
+        .footer-note {
+            margin-top: 20px;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        /* Decoration elements */
+        .ticket-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #003366 0%, #c8102e 50%, #003366 100%);
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ticket-card {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* Hiệu ứng cho input khi lỗi */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="ticket-card">
+    <div class="university-badge">
+        <span>HCMUE</span>
+    </div>
+    <div class="header">
+        <h3>VÉ ĐIỆN TỬ SINH VIÊN</h3>
+        <div class="subtitle">TRƯỜNG ĐẠI HỌC SƯ PHẠM TP.HCM</div>
+    </div>
+    
+    <div class="input-group">
+        <label class="input-label">📌 MÃ SỐ SINH VIÊN</label>
+        <input type="text" id="mssvInput" placeholder="Nhập MSSV của bạn..." autocomplete="off">
+    </div>
+    
+    <button onclick="generateQR()">
+        🎫 TẠO MÃ VÉ
+    </button>
+    
+    <div class="qr-container" id="qrContainer">
+        <div id="qrcode"></div>
+    </div>
+    
+    <div id="displayMSSV" class="mssv-label" style="display: none;"></div>
+    
+    <div class="footer-note">
+        📱 Quét mã QR để xác thực thông tin sinh viên
+    </div>
+</div>
+
+<script>
+    // Khởi tạo đối tượng QRCode với màu xanh dương đặc trưng
+    const qrcode = new QRCode(document.getElementById("qrcode"), {
+        width: 200,
+        height: 200,
+        colorDark: "#003366",      // Màu xanh dương HCMUE
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Lấy các phần tử DOM
+    const mssvInput = document.getElementById("mssvInput");
+    const displayMSSV = document.getElementById("displayMSSV");
+    const qrContainer = document.getElementById("qrContainer");
+
+    function generateQR() {
+        const mssv = mssvInput.value.trim();
+        
+        if (mssv === "") {
+            // Hiệu ứng thông báo lỗi
+            mssvInput.style.borderColor = "#c8102e";
+            mssvInput.style.animation = "shake 0.3s ease";
+            setTimeout(() => {
+                mssvInput.style.borderColor = "#e0e0e0";
+                mssvInput.style.animation = "";
+            }, 500);
+            
+            // Tạo thông báo lỗi tạm thời
+            const oldAlert = document.querySelector(".error-message");
+            if (oldAlert) oldAlert.remove();
+            
+            const errorMsg = document.createElement("div");
+            errorMsg.className = "error-message";
+            errorMsg.innerHTML = "⚠️ Vui lòng nhập MSSV!";
+            errorMsg.style.color = "#c8102e";
+            errorMsg.style.fontSize = "12px";
+            errorMsg.style.marginTop = "-15px";
+            errorMsg.style.marginBottom = "10px";
+            errorMsg.style.fontWeight = "500";
+            mssvInput.parentNode.insertBefore(errorMsg, mssvInput.nextSibling);
+            
+            setTimeout(() => {
+                if (errorMsg) errorMsg.remove();
+            }, 2000);
+            
+            return;
+        }
+        
+        // Xóa thông báo lỗi nếu có
+        const existingError = document.querySelector(".error-message");
+        if (existingError) existingError.remove();
+        mssvInput.style.borderColor = "#e0e0e0";
+        
+        // Chuyển MSSV thành mã QR
+        qrcode.clear();
+        qrcode.makeCode(mssv);
+        
+        // Hiển thị text MSSV bên dưới
+        displayMSSV.innerHTML = `🎓 <strong style="color: #c8102e;">MSSV:</strong> <strong style="font-size: 18px; color: #003366;">${mssv}</strong>`;
+        displayMSSV.style.display = "block";
+        
+        // Thêm hiệu ứng cho container QR
+        qrContainer.classList.add("has-qr");
+        
+        // Animation nhẹ cho MSSV hiển thị
+        displayMSSV.style.animation = "none";
+        displayMSSV.offsetHeight;
+        displayMSSV.style.animation = "fadeInUp 0.4s ease";
+        
+        // Focus vào input để nhập tiếp
+        mssvInput.select();
+    }
+    
+    // Thêm sự kiện Enter để tạo QR nhanh
+    mssvInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            generateQR();
+        }
+    });
+</script>
+
+</body>
+</html>
