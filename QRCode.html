@@ -23,7 +23,6 @@
             padding: 20px;
         }
 
-        /* Container chính */
         .ticket-card {
             background: white;
             padding: 30px 25px;
@@ -37,7 +36,6 @@
             overflow: hidden;
         }
 
-        /* Header với màu sắc HCMUE (xanh dương - đỏ) */
         .header {
             margin-bottom: 25px;
             padding-bottom: 15px;
@@ -61,7 +59,6 @@
             letter-spacing: 1px;
         }
 
-        /* Logo HCMUE với màu đỏ */
         .university-badge {
             width: 70px;
             height: 70px;
@@ -82,7 +79,6 @@
             font-family: 'Times New Roman', serif;
         }
 
-        /* Input field */
         .input-group {
             margin-bottom: 20px;
             text-align: left;
@@ -115,7 +111,6 @@
             box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
         }
 
-        /* Button với màu đỏ đặc trưng */
         button {
             width: 100%;
             padding: 12px 20px;
@@ -142,7 +137,6 @@
             transform: translateY(0);
         }
 
-        /* QR Code container */
         .qr-container {
             background: #f8f9fa;
             padding: 20px;
@@ -165,7 +159,6 @@
             min-height: 180px;
         }
 
-        /* MSSV display */
         .mssv-label {
             margin-top: 12px;
             font-size: 16px;
@@ -179,7 +172,6 @@
             border-left: 4px solid #c8102e;
         }
 
-        /* Footer */
         .footer-note {
             margin-top: 20px;
             font-size: 11px;
@@ -188,7 +180,6 @@
             padding-top: 15px;
         }
 
-        /* Decoration elements */
         .ticket-card::before {
             content: '';
             position: absolute;
@@ -199,7 +190,6 @@
             background: linear-gradient(90deg, #003366 0%, #c8102e 50%, #003366 100%);
         }
 
-        /* Animation */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -215,7 +205,6 @@
             animation: fadeInUp 0.5s ease;
         }
 
-        /* Hiệu ứng cho input khi lỗi */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -255,16 +244,14 @@
 </div>
 
 <script>
-    // Khởi tạo đối tượng QRCode với màu xanh dương đặc trưng
     const qrcode = new QRCode(document.getElementById("qrcode"), {
         width: 200,
         height: 200,
-        colorDark: "#003366",      // Màu xanh dương HCMUE
+        colorDark: "#003366",     
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
     });
 
-    // Lấy các phần tử DOM
     const mssvInput = document.getElementById("mssvInput");
     const displayMSSV = document.getElementById("displayMSSV");
     const qrContainer = document.getElementById("qrContainer");
@@ -273,7 +260,6 @@
         const mssv = mssvInput.value.trim();
         
         if (mssv === "") {
-            // Hiệu ứng thông báo lỗi
             mssvInput.style.borderColor = "#c8102e";
             mssvInput.style.animation = "shake 0.3s ease";
             setTimeout(() => {
@@ -281,7 +267,6 @@
                 mssvInput.style.animation = "";
             }, 500);
             
-            // Tạo thông báo lỗi tạm thời
             const oldAlert = document.querySelector(".error-message");
             if (oldAlert) oldAlert.remove();
             
@@ -302,32 +287,25 @@
             return;
         }
         
-        // Xóa thông báo lỗi nếu có
         const existingError = document.querySelector(".error-message");
         if (existingError) existingError.remove();
         mssvInput.style.borderColor = "#e0e0e0";
         
-        // Chuyển MSSV thành mã QR
         qrcode.clear();
         qrcode.makeCode(mssv);
         
-        // Hiển thị text MSSV bên dưới
         displayMSSV.innerHTML = `🎓 <strong style="color: #c8102e;">MSSV:</strong> <strong style="font-size: 18px; color: #003366;">${mssv}</strong>`;
         displayMSSV.style.display = "block";
         
-        // Thêm hiệu ứng cho container QR
         qrContainer.classList.add("has-qr");
         
-        // Animation nhẹ cho MSSV hiển thị
         displayMSSV.style.animation = "none";
         displayMSSV.offsetHeight;
         displayMSSV.style.animation = "fadeInUp 0.4s ease";
         
-        // Focus vào input để nhập tiếp
         mssvInput.select();
     }
     
-    // Thêm sự kiện Enter để tạo QR nhanh
     mssvInput.addEventListener("keypress", function(event) {
         if (event.key === "Enter") {
             event.preventDefault();
