@@ -1,17 +1,48 @@
+function renderEntryAction() {
+  const entryStatus = document.getElementById("entryStatus");
+  const entryActionLink = document.getElementById("entryActionLink");
+
+  if (!window.ClubAuth) {
+    return null;
+  }
+
+  const currentUser = window.ClubAuth.getCurrentUser();
+
+  if (!currentUser) {
+    entryStatus.innerText = "Đang xem công khai";
+    entryActionLink.href = "../auth/login.html";
+    entryActionLink.innerText = "Đăng nhập";
+    return null;
+  }
+
+  if (window.ClubAuth.isAdmin(currentUser)) {
+    entryStatus.innerText = `${currentUser.displayName} - ${currentUser.roleLabel}`;
+    entryActionLink.href = "../admin/index.html";
+    entryActionLink.innerText = "Trang quản trị";
+    return currentUser;
+  }
+
+  entryStatus.innerText = `${currentUser.studentName} (${currentUser.studentId})`;
+  entryActionLink.href = "../student/index.html";
+  entryActionLink.innerText = "Trang cá nhân";
+  return currentUser;
+}
+
 function renderEmptyState(tbody) {
+  renderEntryAction();
+
   tbody.innerHTML = `
     <tr>
-      <td colspan="5" style="text-align:center; padding: 28px 20px;">
+      <td colspan="5" class="empty-row">
         Hiện chưa có sự kiện sắp diễn ra trong hệ thống.
-        <a href="../admin/index.html" class="detail-btn" style="margin-left: 10px;">
-          Tạo sự kiện
-        </a>
       </td>
     </tr>
   `;
 }
 
 function renderEventTable() {
+  renderEntryAction();
+
   const events = window.ClubStorage ? window.ClubStorage.getUpcomingEvents() : [];
   const tbody = document.getElementById("event-list");
   tbody.innerHTML = "";
@@ -43,10 +74,7 @@ function renderEventTable() {
     nameCell.textContent = event.name;
 
     const timeCell = document.createElement("td");
-    timeCell.textContent = window.ClubStorage.formatDateRange(
-      event.start,
-      event.end,
-    );
+    timeCell.textContent = window.ClubStorage.formatDateRange(event.start, event.end);
 
     const locationCell = document.createElement("td");
     locationCell.textContent = event.location;
@@ -70,3 +98,4 @@ function renderEventTable() {
 
 window.addEventListener("storage", renderEventTable);
 window.addEventListener("load", renderEventTable);
+

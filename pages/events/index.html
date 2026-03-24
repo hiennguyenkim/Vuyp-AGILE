@@ -1,37 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách sự kiện - ĐH Sư phạm TP.HCM</title>
-    <link rel="stylesheet" href="../../assets/css/events.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📋 SỰ KIỆN CLB - ĐH SƯ PHẠM TP.HCM</h1>
-            <span class="sub">Chất lượng - Sáng tạo - Nhân văn</span>
-        </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách sự kiện - HCMUE</title>
+    <link rel="stylesheet" href="../../assets/css/core/base.css" />
+    <link rel="stylesheet" href="../../assets/css/core/theme.css" />
+    <link rel="stylesheet" href="../../assets/css/core/components.css" />
+    <link rel="stylesheet" href="../../assets/css/pages/events.css" />
+  </head>
+  <body>
+    <main class="page-shell events-shell">
+      <section class="surface-card events-panel">
+        <header class="events-header">
+          <div class="events-brand">
+            <img src="../../assets/images/hcmue.png" alt="HCMUE" class="brand-logo" />
+            <div class="events-copy">
+              <p class="section-eyebrow">CLB sự kiện - Đại học Sư phạm TP.HCM</p>
+              <h1>Danh sách sự kiện</h1>
+              <span class="events-subtitle">Theo dõi hoạt động đang mở và truy cập nhanh vào luồng đăng ký.</span>
+            </div>
+          </div>
 
-        <table class="event-table">
-            <thead>
+          <div class="header-actions">
+            <span id="entryStatus" class="pill entry-status">Đang xem công khai</span>
+            <a id="entryActionLink" href="../auth/login.html" class="detail-btn">
+              Đăng nhập
+            </a>
+          </div>
+        </header>
+
+        <section class="events-table-card">
+          <div class="table-wrap">
+            <table class="data-table event-table">
+              <thead>
                 <tr>
-                    <th>Mã sự kiện</th>
-                    <th>Tên sự kiện</th>
-                    <th>Thời gian</th>
-                    <th>Địa điểm</th>
-                    <th></th>
+                  <th>Mã sự kiện</th>
+                  <th>Tên sự kiện</th>
+                  <th>Thời gian</th>
+                  <th>Địa điểm</th>
+                  <th>Hành động</th>
                 </tr>
-            </thead>
-            <tbody id="event-list"></tbody>
-        </table>
+              </thead>
+              <tbody id="event-list"></tbody>
+            </table>
+          </div>
+        </section>
 
-        <div class="footer">
-            <span>🏫 Trường Đại học Sư phạm Thành phố Hồ Chí Minh</span>
+        <div class="events-footer">
+          <span>Đại học Sư phạm Thành phố Hồ Chí Minh</span>
         </div>
-    </div>
+      </section>
+    </main>
 
-    <script src="../../assets/js/storage.js"></script>
-    <script src="../../assets/js/events.js"></script>
-</body>
+    <script src="../../assets/js/core/storage.js"></script>
+    <script src="../../assets/js/core/auth.js"></script>
+    <script src="../../assets/js/pages/events.js"></script>
+  </body>
 </html>

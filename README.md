@@ -1,47 +1,63 @@
 # Quan ly CLB su kien
 
-## Cau truc thu muc
+## Cau truc thu muc moi
 
 ```text
 Vuyp-AGILE/
 |-- index.html
+|-- QRCode.html
 |-- README.md
 |-- assets/
 |   |-- css/
-|   |   |-- admin.css
-|   |   |-- event-detail.css
-|   |   |-- events.css
-|   |   |-- home.css
-|   |   `-- student.css
+|   |   |-- core/
+|   |   |   |-- base.css
+|   |   |   |-- components.css
+|   |   |   `-- theme.css
+|   |   `-- pages/
+|   |       |-- admin.css
+|   |       |-- event-detail.css
+|   |       |-- events.css
+|   |       |-- login.css
+|   |       |-- qr.css
+|   |       `-- student.css
 |   |-- images/
 |   |   `-- hcmue.png
 |   `-- js/
-|       |-- admin.js
-|       |-- event-detail.js
-|       |-- events.js
-|       |-- storage.js
-|       `-- student.js
+|       |-- core/
+|       |   |-- auth.js
+|       |   |-- storage.js
+|       |   `-- utils.js
+|       `-- pages/
+|           |-- admin.js
+|           |-- event-detail.js
+|           |-- events.js
+|           |-- login.js
+|           |-- qr.js
+|           `-- student.js
 `-- pages/
     |-- admin/
     |   `-- index.html
+    |-- auth/
+    |   `-- login.html
     |-- events/
     |   |-- detail.html
     |   `-- index.html
     `-- student/
-        `-- index.html
+        |-- index.html
+        `-- qr.html
 ```
 
-## Y nghia
+## Nguyen tac to chuc
 
-- `index.html`: trang dieu huong vao cac phan he cua de tai.
-- `pages/admin`: phan he quan tri CRUD su kien va theo doi dang ky.
-- `pages/student`: phan he sinh vien dang ky su kien va xem lich su.
-- `pages/events`: trang cong khai de xem danh sach va chi tiet su kien.
-- `assets/css`: toan bo stylesheet dung chung cho du an.
-- `assets/js`: logic giao dien va module `storage.js` dung chung du lieu.
-- `assets/images`: hinh anh va tai nguyen media cua de tai.
+- `assets/css/core`: he theme chung, reset, token mau, component dung lai cho tat ca trang.
+- `assets/css/pages`: phan style rieng theo tung man hinh.
+- `assets/js/core`: auth, storage va helper dung chung.
+- `assets/js/pages`: logic rieng cua tung trang.
+- `pages/*`: chia ro theo khu vuc nguoi dung va chuc nang.
+- `QRCode.html`: giu lai de redirect, tranh gay link cu.
 
 ## Ghi chu
 
-- Toan bo du an hien dang dung `localStorage` lam tang luu tru.
-- Cac trang su kien, sinh vien va admin da duoc doi sang duong dan moi va dung chung nguon du lieu.
+- Toan bo du an van su dung `localStorage` lam tang luu tru.
+- Theme da duoc dong bo lai theo cung he mau, button, card, bang va status badge.
+- Cau truc moi uu tien de doc, de bao tri va de tiep tuc tach nho logic khi du an lon hon.

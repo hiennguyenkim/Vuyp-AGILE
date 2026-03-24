@@ -1,8 +1,20 @@
 let events = [];
 let historyEntries = [];
 let currentEventId = null;
+let currentUser = null;
+
 const registerForm = document.getElementById("registerForm");
 const registerSummaryError = document.getElementById("error");
+const authGreeting = document.getElementById("authGreeting");
+const authSubline = document.getElementById("authSubline");
+const authCardTitle = document.getElementById("authCardTitle");
+const authCardDescription = document.getElementById("authCardDescription");
+const pendingRegisterNotice = document.getElementById("pendingRegisterNotice");
+const homeShortcutBtn = document.getElementById("homeShortcutBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const studentQrFrame = document.getElementById("studentQrFrame");
+const registerTargetEvent = document.getElementById("registerTargetEvent");
+const registerAuthNote = document.getElementById("registerAuthNote");
 const registerRequiredFields = {
   studentName: "Họ tên",
   studentId: "MSSV",
@@ -16,12 +28,55 @@ const registerFieldErrors = {
   studentGender: document.getElementById("studentGenderError"),
 };
 
-function getEventContextFromUrl() {
+function getPageContextFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return {
     eventId: params.get("eventId"),
     action: params.get("action"),
+    view: params.get("view"),
   };
+}
+
+function clearPageContextFromUrl() {
+  if (window.location.search && window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function buildHomeRedirectUrl() {
+  const context = getPageContextFromUrl();
+  const params = new URLSearchParams();
+  params.set("next", "student");
+
+  if (context.eventId) {
+    params.set("eventId", context.eventId);
+  }
+
+  if (context.action) {
+    params.set("action", context.action);
+  }
+
+  if (context.view) {
+    params.set("view", context.view);
+  }
+
+  return `../auth/login.html?${params.toString()}`;
+}
+
+function ensureStudentAccess() {
+  if (!window.ClubAuth) {
+    window.location.replace("../auth/login.html?next=student");
+    return false;
+  }
+
+  currentUser = window.ClubAuth.getCurrentUser();
+
+  if (!currentUser || !window.ClubAuth.isStudent(currentUser)) {
+    window.location.replace(buildHomeRedirectUrl());
+    return false;
+  }
+
+  return true;
 }
 
 function escapeHtml(value) {
@@ -33,12 +88,19 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function loadState() {
-  const state = ClubStorage.readState();
-  events = ClubStorage.sortEvents(state.events);
+function buildHistoryEntriesForStudent(studentId, state) {
+  const normalizedStudentId = ClubStorage.normalizeString(studentId).toLowerCase();
   const seen = new Set();
-  historyEntries = ClubStorage.sortRegistrations(
+
+  return ClubStorage.sortRegistrations(
     [...state.registrations, ...state.legacyHistory].filter((entry) => {
+      if (
+        ClubStorage.normalizeString(entry.studentId).toLowerCase() !==
+        normalizedStudentId
+      ) {
+        return false;
+      }
+
       const uniqueKey = [
         entry.eventId,
         entry.eventName,
@@ -56,6 +118,93 @@ function loadState() {
       return true;
     }),
   );
+}
+
+function isStudentRegisteredForEvent(eventId, studentId) {
+  const normalizedEventId = ClubStorage.normalizeString(eventId);
+  const normalizedStudentId = ClubStorage.normalizeString(studentId).toLowerCase();
+
+  if (!normalizedEventId || !normalizedStudentId) {
+    return false;
+  }
+
+  return ClubStorage.readState().registrations.some((registration) => {
+    return (
+      ClubStorage.normalizeString(registration.eventId) === normalizedEventId &&
+      ClubStorage.normalizeString(registration.studentId).toLowerCase() ===
+        normalizedStudentId
+    );
+  });
+}
+
+function isCurrentUserRegisteredForEvent(eventId) {
+  return currentUser
+    ? isStudentRegisteredForEvent(eventId, currentUser.studentId)
+    : false;
+}
+
+function getStudentQrUrl() {
+  const params = new URLSearchParams();
+  params.set("code", currentUser.studentId);
+  params.set("name", currentUser.studentName);
+  params.set("mssv", currentUser.studentId);
+  params.set("readonly", "1");
+
+  return `qr.html?${params.toString()}`;
+}
+
+function loadState() {
+  if (!ensureStudentAccess()) {
+    return false;
+  }
+
+  const state = ClubStorage.readState();
+  events = ClubStorage.sortEvents(state.events);
+  historyEntries = buildHistoryEntriesForStudent(currentUser.studentId, state);
+  return true;
+}
+
+function getEventById(eventId) {
+  return events.find((event) => event.id === eventId) || null;
+}
+
+function renderAuthPanel() {
+  authGreeting.innerText = `${currentUser.studentName} (${currentUser.studentId})`;
+  authSubline.innerText = "Bạn đang đăng nhập bằng tài khoản sinh viên.";
+  authCardTitle.innerText = `Xin chào, ${currentUser.studentName}`;
+  authCardDescription.innerText =
+    "Mọi thao tác đăng ký và tạo QR sinh viên sẽ lấy trực tiếp từ MSSV của tài khoản hiện tại.";
+  document.getElementById("accountName").innerText = currentUser.studentName;
+  document.getElementById("accountStudentId").innerText = currentUser.studentId;
+  document.getElementById("accountCourse").innerText = currentUser.studentCourse;
+  document.getElementById("accountGender").innerText = currentUser.studentGender;
+  document.getElementById("accountNote").innerText =
+    "QR sinh viên bên dưới được tạo trực tiếp từ MSSV của tài khoản hiện tại.";
+
+  const { eventId, action } = getPageContextFromUrl();
+  const requestedEvent = eventId ? getEventById(eventId) : null;
+
+  pendingRegisterNotice.hidden = !(requestedEvent && action === "register");
+  pendingRegisterNotice.innerText =
+    requestedEvent && action === "register"
+      ? `Sự kiện đang chờ đăng ký: ${requestedEvent.code} - ${requestedEvent.name}`
+      : "";
+}
+
+function renderStudentQr() {
+  studentQrFrame.src = getStudentQrUrl();
+}
+
+function syncRegisterFormWithSession() {
+  document.getElementById("studentName").value = currentUser.studentName;
+  document.getElementById("studentId").value = currentUser.studentId;
+  document.getElementById("studentCourse").value = currentUser.studentCourse;
+  document.getElementById("studentGender").value = currentUser.studentGender;
+  document.getElementById("studentName").readOnly = true;
+  document.getElementById("studentId").readOnly = true;
+  document.getElementById("studentCourse").readOnly = true;
+  document.getElementById("studentGender").disabled = true;
+  registerAuthNote.hidden = false;
 }
 
 function renderEvents() {
@@ -122,8 +271,11 @@ function handleEventRowKeydown(event, eventId) {
 }
 
 function showDetail(eventId) {
-  loadState();
-  const event = events.find((item) => item.id === eventId);
+  if (!loadState()) {
+    return;
+  }
+
+  const event = getEventById(eventId);
 
   if (!event) {
     showToast("Sự kiện không còn tồn tại", "#850E35");
@@ -132,6 +284,7 @@ function showDetail(eventId) {
 
   currentEventId = eventId;
   const status = ClubStorage.getEventStatus(event);
+  const hasRegistered = isCurrentUserRegisteredForEvent(eventId);
   const registerButton = document.querySelector(".register-btn");
 
   document.getElementById("detailName").innerText = event.name;
@@ -146,49 +299,23 @@ function showDetail(eventId) {
   document.getElementById("detailLocation").innerText = event.location;
   document.getElementById("detailMax").innerText = `${event.registered}/${event.max}`;
   document.getElementById("detailStatus").innerText = status.text;
-  registerButton.disabled = !status.canRegister;
-  registerButton.innerText = status.canRegister
-    ? "Đăng ký tham gia"
-    : "Không thể đăng ký";
+
+  if (hasRegistered) {
+    registerButton.disabled = true;
+    registerButton.innerText = "Bạn đã đăng ký sự kiện này";
+  } else if (status.canRegister) {
+    registerButton.disabled = false;
+    registerButton.innerText = "Đăng ký tham gia";
+  } else {
+    registerButton.disabled = true;
+    registerButton.innerText = "Không thể đăng ký";
+  }
 
   document.getElementById("detailModal").style.display = "flex";
 }
 
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
-}
-
-function openRegister() {
-  loadState();
-  const event = events.find((item) => item.id === currentEventId);
-
-  if (!event) {
-    showToast("Sự kiện không còn tồn tại", "#850E35");
-    closeModal();
-    return;
-  }
-
-  const status = ClubStorage.getEventStatus(event);
-  if (!status.canRegister) {
-    showToast(status.text, "#850E35");
-    return;
-  }
-
-  clearRegisterValidation();
-  document.getElementById("registerModal").style.display = "flex";
-}
-
-function closeRegister() {
-  document.getElementById("registerModal").style.display = "none";
-  clearRegisterValidation();
-}
-
-function resetRegisterForm() {
-  document.getElementById("studentName").value = "";
-  document.getElementById("studentId").value = "";
-  document.getElementById("studentCourse").value = "";
-  document.getElementById("studentGender").value = "";
-  clearRegisterValidation();
 }
 
 function clearRegisterValidation() {
@@ -222,6 +349,17 @@ function validateRegisterPayload(payload) {
   };
 }
 
+function resetRegisterForm() {
+  syncRegisterFormWithSession();
+  registerTargetEvent.innerText = "";
+  clearRegisterValidation();
+}
+
+function closeRegister() {
+  document.getElementById("registerModal").style.display = "none";
+  resetRegisterForm();
+}
+
 function syncRegisterFieldValidation(fieldId) {
   const value = document.getElementById(fieldId).value.trim();
 
@@ -241,23 +379,50 @@ function syncRegisterFieldValidation(fieldId) {
   }
 }
 
+function openRegister() {
+  if (!loadState()) {
+    return;
+  }
+
+  const event = getEventById(currentEventId);
+
+  if (!event) {
+    showToast("Sự kiện không còn tồn tại", "#850E35");
+    closeModal();
+    return;
+  }
+
+  const status = ClubStorage.getEventStatus(event);
+
+  if (!status.canRegister) {
+    showToast(status.text, "#850E35");
+    return;
+  }
+
+  if (isCurrentUserRegisteredForEvent(event.id)) {
+    showToast("Bạn đã đăng ký sự kiện này rồi.", "#1c5da9", "#154a8a");
+    closeModal();
+    return;
+  }
+
+  clearRegisterValidation();
+  syncRegisterFormWithSession();
+  registerTargetEvent.innerText = `${event.code} - ${event.name}`;
+  document.getElementById("registerModal").style.display = "flex";
+}
+
 function registerEvent() {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
+
   clearRegisterValidation();
 
   const payload = {
-    studentName: ClubStorage.normalizeString(
-    document.getElementById("studentName").value,
-    ),
-    studentId: ClubStorage.normalizeString(
-    document.getElementById("studentId").value,
-    ),
-    studentCourse: ClubStorage.normalizeString(
-    document.getElementById("studentCourse").value,
-    ),
-    studentGender: ClubStorage.normalizeString(
-    document.getElementById("studentGender").value,
-    ),
+    studentName: ClubStorage.normalizeString(currentUser.studentName),
+    studentId: ClubStorage.normalizeString(currentUser.studentId),
+    studentCourse: ClubStorage.normalizeString(currentUser.studentCourse),
+    studentGender: ClubStorage.normalizeString(currentUser.studentGender),
   };
   const validationResult = validateRegisterPayload(payload);
 
@@ -269,12 +434,7 @@ function registerEvent() {
     return;
   }
 
-  const result = ClubStorage.registerStudent(currentEventId, {
-    studentName: payload.studentName,
-    studentId: payload.studentId,
-    studentCourse: payload.studentCourse,
-    studentGender: payload.studentGender,
-  });
+  const result = ClubStorage.registerStudent(currentEventId, payload);
 
   if (!result.ok) {
     if (
@@ -289,16 +449,18 @@ function registerEvent() {
   }
 
   loadState();
+  renderAuthPanel();
+  renderStudentQr();
   renderEvents();
   renderHistory();
-  showDetail(currentEventId);
   closeRegister();
-  showToast("Đăng ký sự kiện thành công!", "#1f8b4c", "#146c3a");
-  resetRegisterForm();
+  showToast("Đăng ký thành công. QR sinh viên nằm ở Trang cá nhân.", "#1f8b4c", "#146c3a");
 }
 
 function renderHistory() {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
 
   const html = historyEntries
     .map((entry) => {
@@ -321,12 +483,13 @@ function renderHistory() {
     html ||
     `
       <tr>
-        <td colspan="8">Chưa có lịch sử đăng ký nào.</td>
+        <td colspan="8">Chưa có lịch sử đăng ký nào cho tài khoản này.</td>
       </tr>
     `;
 }
 
 function showEvents() {
+  document.getElementById("profile").style.display = "none";
   document.getElementById("history").style.display = "none";
   document.getElementById("eventList").style.display = "block";
 
@@ -335,40 +498,65 @@ function showEvents() {
   items[0].classList.add("active");
 }
 
-function showHistory() {
+function showProfile() {
   document.getElementById("eventList").style.display = "none";
-  document.getElementById("history").style.display = "block";
+  document.getElementById("history").style.display = "none";
+  document.getElementById("profile").style.display = "block";
 
   const items = document.querySelectorAll(".menu-item");
   items.forEach((item) => item.classList.remove("active"));
   items[1].classList.add("active");
 }
 
-function openRequestedEventFromUrl() {
-  const { eventId, action } = getEventContextFromUrl();
+function showHistory() {
+  document.getElementById("eventList").style.display = "none";
+  document.getElementById("profile").style.display = "none";
+  document.getElementById("history").style.display = "block";
+
+  const items = document.querySelectorAll(".menu-item");
+  items.forEach((item) => item.classList.remove("active"));
+  items[2].classList.add("active");
+}
+
+function handleLogout() {
+  window.ClubAuth.logout();
+  window.location.href = "../events/index.html";
+}
+
+function openRequestedContextFromUrl() {
+  const { eventId, action, view } = getPageContextFromUrl();
+
+  if (view === "profile") {
+    showProfile();
+  }
+
+  if (view === "history") {
+    showHistory();
+  }
 
   if (!eventId) {
+    clearPageContextFromUrl();
     return;
   }
 
-  loadState();
-  const requestedEvent = events.find((event) => event.id === eventId);
+  const requestedEvent = getEventById(eventId);
 
   if (!requestedEvent) {
     showToast("Sự kiện được yêu cầu không còn tồn tại", "#850E35");
+    clearPageContextFromUrl();
     return;
   }
 
-  showEvents();
-  showDetail(eventId);
+  currentEventId = eventId;
 
   if (action === "register") {
     openRegister();
+    clearPageContextFromUrl();
+    return;
   }
 
-  if (window.history.replaceState) {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+  showDetail(eventId);
+  clearPageContextFromUrl();
 }
 
 document.getElementById("menuBtn").onclick = function () {
@@ -376,6 +564,10 @@ document.getElementById("menuBtn").onclick = function () {
 };
 
 document.getElementById("search").addEventListener("input", renderEvents);
+homeShortcutBtn.addEventListener("click", function () {
+  window.location.href = "../events/index.html";
+});
+logoutBtn.addEventListener("click", handleLogout);
 
 Object.keys(registerRequiredFields).forEach((fieldId) => {
   document.getElementById(fieldId).addEventListener("input", function () {
@@ -418,8 +610,23 @@ window.onclick = function (event) {
 };
 
 window.addEventListener("storage", function () {
+  if (!ensureStudentAccess()) {
+    return;
+  }
+
+  loadState();
+  renderAuthPanel();
+  renderStudentQr();
+  syncRegisterFormWithSession();
   renderEvents();
   renderHistory();
+
+  if (
+    document.getElementById("detailModal").style.display === "flex" &&
+    currentEventId
+  ) {
+    showDetail(currentEventId);
+  }
 });
 
 function showToast(message, color = "#850E35", accentColor = "#cf3439") {
@@ -431,9 +638,15 @@ function showToast(message, color = "#850E35", accentColor = "#cf3439") {
 
   setTimeout(() => {
     toast.classList.remove("show");
-  }, 2000);
+  }, 2200);
 }
 
-renderEvents();
-renderHistory();
-openRequestedEventFromUrl();
+if (loadState()) {
+  renderAuthPanel();
+  renderStudentQr();
+  syncRegisterFormWithSession();
+  renderEvents();
+  renderHistory();
+  openRequestedContextFromUrl();
+}
+

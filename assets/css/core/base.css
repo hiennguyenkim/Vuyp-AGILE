@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-base);
+  color: var(--color-text);
+  background: var(--page-background);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at top left, rgba(17, 79, 150, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(195, 32, 57, 0.08), transparent 30%),
+    linear-gradient(180deg, #f5f8fc 0%, #edf3f9 100%);
+  z-index: -1;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: none;
+}
+
+[hidden] {
+  display: none !important;
+}

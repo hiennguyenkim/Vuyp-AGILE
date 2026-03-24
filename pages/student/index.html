@@ -2,26 +2,47 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trang sinh viên</title>
-
-    <link rel="stylesheet" href="../../assets/css/student.css" />
+    <link rel="stylesheet" href="../../assets/css/core/base.css" />
+    <link rel="stylesheet" href="../../assets/css/core/theme.css" />
+    <link rel="stylesheet" href="../../assets/css/core/components.css" />
+    <link rel="stylesheet" href="../../assets/css/pages/student.css" />
   </head>
-
   <body>
     <header class="header">
       <div class="logo-area">
-        <img src="../../assets/images/hcmue.png" class="logo" />
+        <img src="../../assets/images/hcmue.png" class="logo" alt="HCMUE" />
       </div>
 
-      <button id="menuBtn">☰</button>
+      <button id="menuBtn" type="button">☰</button>
 
       <div class="title">QUẢN LÝ CÂU LẠC BỘ SỰ KIỆN</div>
+
+      <div class="header-auth">
+        <div class="header-auth-copy">
+          <strong id="authGreeting">Khách đang xem sự kiện</strong>
+          <span id="authSubline">Đăng nhập để đăng ký và xem lịch sử cá nhân.</span>
+        </div>
+
+        <div class="header-auth-actions">
+          <button id="homeShortcutBtn" type="button" class="header-auth-btn">
+            Trang chủ
+          </button>
+
+          <button
+            id="logoutBtn"
+            type="button"
+            class="header-auth-btn header-auth-btn-secondary"
+          >
+            Đăng xuất
+          </button>
+        </div>
+      </div>
     </header>
 
     <div class="container">
-      <!-- SIDEBAR -->
-
-      <div class="sidebar" id="sidebar">
+      <aside class="sidebar" id="sidebar">
         <div class="student-box" onclick="toggleStudentMenu()">
           <div class="student-left">
             <span class="student-icon">👤</span>
@@ -32,28 +53,30 @@
         </div>
 
         <div id="studentMenu">
-          <div class="menu-item active" onclick="showEvents()">
-            Danh sách sự kiện
-          </div>
-
+          <div class="menu-item active" onclick="showEvents()">Danh sách sự kiện</div>
+          <div class="menu-item" onclick="showProfile()">Trang cá nhân</div>
           <div class="menu-item" onclick="showHistory()">Lịch sử đăng ký</div>
         </div>
-      </div>
+      </aside>
 
-      <!-- CONTENT -->
-
-      <div class="content">
-        <div id="eventList">
-          <h2>Danh sách sự kiện</h2>
+      <main class="content">
+        <section id="eventList" class="content-panel">
+          <div class="section-headline">
+            <div>
+              <p class="section-eyebrow">Không gian sinh viên</p>
+              <a class="section-title-link" href="../events/index.html">
+                Danh sách sự kiện
+              </a>
+            </div>
+          </div>
 
           <div class="search-box">
             <input id="search" placeholder="Nhập tên để tìm kiếm" />
-
-            <button onclick="renderEvents()">Tìm kiếm</button>
+            <button type="button" onclick="renderEvents()">Tìm kiếm</button>
           </div>
 
           <div class="table-wrap">
-            <table>
+            <table class="data-table student-table">
               <thead>
                 <tr>
                   <th>STT</th>
@@ -66,19 +89,80 @@
                   <th>HÀNH ĐỘNG</th>
                 </tr>
               </thead>
-
               <tbody id="eventTable"></tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- HISTORY -->
+        <section id="profile" class="content-panel" style="display: none">
+          <section class="auth-card" id="authCard">
+            <div class="auth-copy">
+              <p class="section-eyebrow">Trang cá nhân sinh viên</p>
+              <h2 id="authCardTitle">Khu vực sinh viên</h2>
+              <p id="authCardDescription" class="auth-description">
+                Thông tin tài khoản sẽ được dùng để đăng ký và tạo QR sinh viên từ MSSV.
+              </p>
+              <div id="pendingRegisterNotice" class="auth-inline-note" hidden></div>
+            </div>
 
-        <div id="history" style="display: none">
-          <h2>Lịch sử đăng ký</h2>
+            <div id="accountPanel" class="account-panel">
+              <div class="account-grid">
+                <div class="account-item">
+                  <span>Họ tên</span>
+                  <strong id="accountName"></strong>
+                </div>
+
+                <div class="account-item">
+                  <span>MSSV</span>
+                  <strong id="accountStudentId"></strong>
+                </div>
+
+                <div class="account-item">
+                  <span>Khóa</span>
+                  <strong id="accountCourse"></strong>
+                </div>
+
+                <div class="account-item">
+                  <span>Giới tính</span>
+                  <strong id="accountGender"></strong>
+                </div>
+              </div>
+
+              <p class="account-note" id="accountNote">
+                Thông tin từ tài khoản này sẽ được dùng khi đăng ký sự kiện.
+              </p>
+            </div>
+
+            <section class="student-qr-card">
+              <div class="student-qr-copy">
+                <p class="section-eyebrow">QR sinh viên</p>
+                <h3>Mã QR cá nhân theo MSSV</h3>
+                <p>
+                  Mã QR này đại diện cho tài khoản sinh viên hiện tại và được tạo trực tiếp từ MSSV của bạn.
+                </p>
+              </div>
+
+              <div class="student-qr-shell">
+                <iframe
+                  id="studentQrFrame"
+                  class="student-qr-frame"
+                  title="QR sinh viên"
+                ></iframe>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <section id="history" class="content-panel" style="display: none">
+          <div class="section-headline">
+            <div>
+              <p class="section-eyebrow">Theo dõi cá nhân</p>
+              <h2>Lịch sử đăng ký</h2>
+            </div>
+          </div>
 
           <div class="table-wrap">
-            <table>
+            <table class="data-table history-table">
               <thead>
                 <tr>
                   <th>Mã sự kiện</th>
@@ -95,11 +179,9 @@
               <tbody id="historyList"></tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
-
-    <!-- MODAL CHI TIẾT -->
 
     <div id="detailModal" class="modal">
       <div class="modal-box">
@@ -139,19 +221,22 @@
           <span id="detailStatus"></span>
         </div>
 
-        <button class="register-btn" onclick="openRegister()">
+        <button class="register-btn" type="button" onclick="openRegister()">
           Đăng ký tham gia
         </button>
       </div>
     </div>
-
-    <!-- MODAL ĐĂNG KÝ -->
 
     <div id="registerModal" class="modal">
       <div class="modal-box">
         <span class="close" onclick="closeRegister()">✕</span>
 
         <h2>Đăng ký sự kiện</h2>
+
+        <p id="registerTargetEvent" class="register-target"></p>
+        <p id="registerAuthNote" class="register-auth-note">
+          Thông tin đăng ký sẽ được lấy từ tài khoản đang đăng nhập.
+        </p>
 
         <form id="registerForm" novalidate>
           <div class="form-group">
@@ -174,7 +259,6 @@
 
           <div class="form-group">
             <label>Giới tính <span class="required">*</span></label>
-
             <select id="studentGender" required>
               <option value="">Chọn giới tính</option>
               <option>Nam</option>
@@ -191,8 +275,10 @@
       </div>
     </div>
 
-    <div id="toast"></div>
-    <script src="../../assets/js/storage.js"></script>
-    <script src="../../assets/js/student.js"></script>
+    <div id="toast" class="toast student-toast"></div>
+    <script src="../../assets/js/core/utils.js"></script>
+    <script src="../../assets/js/core/storage.js"></script>
+    <script src="../../assets/js/core/auth.js"></script>
+    <script src="../../assets/js/pages/student.js"></script>
   </body>
 </html>

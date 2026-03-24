@@ -3,6 +3,7 @@ let registrations = [];
 let deleteEventId = null;
 let recentlySavedEventId = null;
 let selectedDetailEventId = null;
+let currentUser = null;
 
 const form = document.getElementById("eventForm");
 const list = document.getElementById("eventList");
@@ -12,6 +13,10 @@ const deleteMessage = document.getElementById("deleteMessage");
 const errorBox = document.getElementById("error");
 const successBox = document.getElementById("success");
 const detailSection = document.getElementById("eventDetailSection");
+const adminName = document.getElementById("adminName");
+const adminRole = document.getElementById("adminRole");
+const homeBtn = document.getElementById("homeBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 const requiredFields = {
   name: "Tên sự kiện",
   start: "Thời gian bắt đầu",
@@ -27,6 +32,27 @@ const fieldErrorElements = {
   max: document.getElementById("maxError"),
 };
 
+function ensureAdminAccess() {
+  if (!window.ClubAuth) {
+    window.location.replace("../auth/login.html?next=admin");
+    return false;
+  }
+
+  currentUser = window.ClubAuth.getCurrentUser();
+
+  if (!currentUser || !window.ClubAuth.isAdmin(currentUser)) {
+    window.location.replace("../auth/login.html?next=admin");
+    return false;
+  }
+
+  return true;
+}
+
+function renderAdminSession() {
+  adminName.innerText = currentUser.displayName || "Quản trị viên";
+  adminRole.innerText = `${currentUser.roleLabel} - ${currentUser.loginId}`;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -37,9 +63,14 @@ function escapeHtml(value) {
 }
 
 function loadState() {
+  if (!ensureAdminAccess()) {
+    return false;
+  }
+
   const state = ClubStorage.readState();
   events = ClubStorage.sortEvents(state.events);
   registrations = ClubStorage.sortRegistrations(state.registrations);
+  return true;
 }
 
 function resetMessages() {
@@ -68,7 +99,9 @@ function setFieldError(fieldId, message) {
 }
 
 function syncInlineValidation(fieldId) {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
   const eventId = document.getElementById("eventId").value;
   const currentEvent = events.find((item) => item.id === eventId);
   const field = document.getElementById(fieldId);
@@ -340,7 +373,9 @@ form.addEventListener("submit", function (event) {
   event.preventDefault();
   resetMessages();
   clearFieldErrors();
-  loadState();
+  if (!loadState()) {
+    return;
+  }
 
   const eventId = document.getElementById("eventId").value;
   const payload = {
@@ -384,12 +419,17 @@ form.addEventListener("submit", function (event) {
     successBox.innerText = "Tạo sự kiện thành công.";
   }
 
-  loadState();
+  if (!loadState()) {
+    return;
+  }
+  renderAdminSession();
   renderEvents();
 });
 
 function editEvent(eventId) {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
   resetMessages();
   const event = events.find((item) => item.id === eventId);
 
@@ -405,7 +445,9 @@ function editEvent(eventId) {
 }
 
 function viewEventDetail(eventId) {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
   resetMessages();
   renderDetailPanel(eventId);
   detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -434,7 +476,10 @@ function confirmDelete() {
 
   try {
     ClubStorage.deleteEvent(deleteEventId);
-    loadState();
+    if (!loadState()) {
+      return;
+    }
+    renderAdminSession();
     renderEvents();
 
     if (document.getElementById("eventId").value === deleteEventId) {
@@ -458,6 +503,15 @@ function confirmDelete() {
 document.getElementById("btnReset").addEventListener("click", function () {
   resetForm();
   resetMessages();
+});
+
+homeBtn.addEventListener("click", function () {
+  window.location.href = "../events/index.html";
+});
+
+logoutBtn.addEventListener("click", function () {
+  window.ClubAuth.logout();
+  window.location.href = "../events/index.html";
 });
 
 document
@@ -510,7 +564,10 @@ window.onclick = function (event) {
 };
 
 window.addEventListener("storage", function () {
-  loadState();
+  if (!loadState()) {
+    return;
+  }
+  renderAdminSession();
   renderEvents();
 });
 
@@ -524,5 +581,7 @@ function showToast(message) {
   }, 3000);
 }
 
-loadState();
-renderEvents();
+if (loadState()) {
+  renderAdminSession();
+  renderEvents();
+}

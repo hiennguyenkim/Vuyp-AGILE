@@ -2,182 +2,242 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Admin - Quản lý sự kiện</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản trị sự kiện</title>
+    <link rel="stylesheet" href="../../assets/css/core/base.css" />
+    <link rel="stylesheet" href="../../assets/css/core/theme.css" />
+    <link rel="stylesheet" href="../../assets/css/core/components.css" />
+    <link rel="stylesheet" href="../../assets/css/pages/admin.css" />
   </head>
-
   <body>
-    <h1>Quản lý sự kiện</h1>
-
-    <div class="form-container">
-      <h2>Tạo hoặc chỉnh sửa sự kiện</h2>
-
-      <div id="error" class="error"></div>
-      <div id="success" class="success"></div>
-
-      <form id="eventForm" novalidate>
-        <input type="hidden" id="eventId" />
-
-        <label>Tên sự kiện <span class="required">*</span></label>
-        <input type="text" id="name" required />
-        <div id="nameError" class="field-error"></div>
-
-        <label>Mô tả</label>
-        <textarea id="description"></textarea>
-
-        <label>Diễn giả</label>
-        <input type="text" id="speaker" />
-
-        <label>Thời gian bắt đầu <span class="required">*</span></label>
-        <input type="datetime-local" id="start" required />
-        <div id="startError" class="field-error"></div>
-
-        <label>Thời gian kết thúc <span class="required">*</span></label>
-        <input type="datetime-local" id="end" required />
-        <div id="endError" class="field-error"></div>
-
-        <label>Địa điểm <span class="required">*</span></label>
-        <input type="text" id="location" required />
-        <div id="locationError" class="field-error"></div>
-
-        <label>Số lượng tối đa <span class="required">*</span></label>
-        <input type="number" id="max" min="1" required />
-        <div id="maxError" class="field-error"></div>
-
-        <div style="display: flex; gap: 10px;">
-          <button type="submit">Lưu</button>
-          <button type="button" id="btnReset" class="secondary-btn">
-            Tạo mới
-          </button>
-          <button
-            type="button"
-            id="btnDeleteDetail"
-            class="delete-btn"
-            style="display: none;"
-            onclick="deleteFromDetail()"
-          >
-            Xóa sự kiện
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span id="totalEvents">0</span>
-        <small>Tổng sự kiện</small>
-      </div>
-
-      <div class="stat-card">
-        <span id="openEvents">0</span>
-        <small>Đang mở đăng ký</small>
-      </div>
-
-      <div class="stat-card">
-        <span id="totalRegistrations">0</span>
-        <small>Lượt đăng ký</small>
-      </div>
-    </div>
-
-    <h2>Danh sách sự kiện</h2>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Mã</th>
-            <th>Tên</th>
-            <th>Thời gian</th>
-            <th>Địa điểm</th>
-            <th>Đã đăng ký</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-          </tr>
-        </thead>
-
-        <tbody id="eventList"></tbody>
-      </table>
-    </div>
-
-    <div id="eventDetailSection" class="registration-section" style="display: none;">
-      <div class="section-head">
-        <h2>Chi tiết sự kiện</h2>
-
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button type="button" id="btnEditFromDetail" class="edit-btn action-inline">
-            Chỉnh sửa
-          </button>
-          <button type="button" id="btnDeleteFromPanel" class="delete-btn action-inline">
-            Xóa sự kiện
-          </button>
-        </div>
-      </div>
-
-      <div class="detail-grid">
-        <div class="detail-item">
-          <label>Mã sự kiện</label>
-          <span id="detailCode"></span>
+    <main class="page-shell page-shell-wide admin-shell">
+      <header class="surface-card admin-topbar">
+        <div class="admin-topbar-copy">
+          <p class="section-eyebrow">Phân hệ quản trị</p>
+          <h1>Quản lý sự kiện</h1>
+          <span class="admin-topbar-note">Tạo, chỉnh sửa và theo dõi dữ liệu đăng ký trong cùng một không gian làm việc.</span>
         </div>
 
-        <div class="detail-item">
-          <label>Tên sự kiện</label>
-          <span id="detailName"></span>
+        <div class="admin-session">
+          <div class="admin-session-copy">
+            <strong id="adminName">Quản trị viên</strong>
+            <span id="adminRole">Đang xác thực tài khoản</span>
+          </div>
+
+          <div class="admin-session-actions">
+            <button type="button" id="homeBtn" class="secondary-btn topbar-btn">
+              Trang chủ
+            </button>
+            <button type="button" id="logoutBtn" class="topbar-btn">
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <div class="surface-card stat-card">
+          <span id="totalEvents">0</span>
+          <small>Tổng sự kiện</small>
         </div>
 
-        <div class="detail-item detail-full">
-          <label>Mô tả</label>
-          <span id="detailDescription"></span>
+        <div class="surface-card stat-card">
+          <span id="openEvents">0</span>
+          <small>Đang mở đăng ký</small>
         </div>
 
-        <div class="detail-item">
-          <label>Diễn giả</label>
-          <span id="detailSpeaker"></span>
+        <div class="surface-card stat-card">
+          <span id="totalRegistrations">0</span>
+          <small>Lượt đăng ký</small>
+        </div>
+      </section>
+
+      <section class="surface-card form-container">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Biểu mẫu quản trị</p>
+            <h2>Tạo hoặc chỉnh sửa sự kiện</h2>
+          </div>
         </div>
 
-        <div class="detail-item">
-          <label>Thời gian</label>
-          <span id="detailTime"></span>
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+
+        <form id="eventForm" novalidate>
+          <input type="hidden" id="eventId" />
+
+          <div class="form-grid">
+            <div class="field-block field-block-full">
+              <label>Tên sự kiện <span class="required">*</span></label>
+              <input type="text" id="name" required />
+              <div id="nameError" class="field-error"></div>
+            </div>
+
+            <div class="field-block field-block-full">
+              <label>Mô tả</label>
+              <textarea id="description"></textarea>
+            </div>
+
+            <div class="field-block">
+              <label>Diễn giả</label>
+              <input type="text" id="speaker" />
+            </div>
+
+            <div class="field-block">
+              <label>Địa điểm <span class="required">*</span></label>
+              <input type="text" id="location" required />
+              <div id="locationError" class="field-error"></div>
+            </div>
+
+            <div class="field-block">
+              <label>Thời gian bắt đầu <span class="required">*</span></label>
+              <input type="datetime-local" id="start" required />
+              <div id="startError" class="field-error"></div>
+            </div>
+
+            <div class="field-block">
+              <label>Thời gian kết thúc <span class="required">*</span></label>
+              <input type="datetime-local" id="end" required />
+              <div id="endError" class="field-error"></div>
+            </div>
+
+            <div class="field-block">
+              <label>Số lượng tối đa <span class="required">*</span></label>
+              <input type="number" id="max" min="1" required />
+              <div id="maxError" class="field-error"></div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit">Lưu</button>
+            <button type="button" id="btnReset" class="secondary-btn">Tạo mới</button>
+            <button
+              type="button"
+              id="btnDeleteDetail"
+              class="delete-btn"
+              style="display: none"
+              onclick="deleteFromDetail()"
+            >
+              Xóa sự kiện
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="surface-card event-list-section">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Dữ liệu sự kiện</p>
+            <h2>Danh sách sự kiện</h2>
+          </div>
         </div>
 
-        <div class="detail-item">
-          <label>Địa điểm</label>
-          <span id="detailLocation"></span>
+        <div class="table-wrap">
+          <table class="data-table admin-table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tên</th>
+                <th>Thời gian</th>
+                <th>Địa điểm</th>
+                <th>Đã đăng ký</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+
+            <tbody id="eventList"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="eventDetailSection" class="surface-card registration-section" style="display: none">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Xem nhanh</p>
+            <h2>Chi tiết sự kiện</h2>
+          </div>
+
+          <div class="inline-actions">
+            <button type="button" id="btnEditFromDetail" class="edit-btn action-inline">
+              Chỉnh sửa
+            </button>
+            <button type="button" id="btnDeleteFromPanel" class="delete-btn action-inline">
+              Xóa sự kiện
+            </button>
+          </div>
         </div>
 
-        <div class="detail-item">
-          <label>Số lượng tối đa</label>
-          <span id="detailCapacity"></span>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Mã sự kiện</label>
+            <span id="detailCode"></span>
+          </div>
+
+          <div class="detail-item">
+            <label>Tên sự kiện</label>
+            <span id="detailName"></span>
+          </div>
+
+          <div class="detail-item detail-full">
+            <label>Mô tả</label>
+            <span id="detailDescription"></span>
+          </div>
+
+          <div class="detail-item">
+            <label>Diễn giả</label>
+            <span id="detailSpeaker"></span>
+          </div>
+
+          <div class="detail-item">
+            <label>Thời gian</label>
+            <span id="detailTime"></span>
+          </div>
+
+          <div class="detail-item">
+            <label>Địa điểm</label>
+            <span id="detailLocation"></span>
+          </div>
+
+          <div class="detail-item">
+            <label>Số lượng tối đa</label>
+            <span id="detailCapacity"></span>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div class="registration-section">
-      <div class="section-head">
-        <h2>Dữ liệu đăng ký sinh viên</h2>
+      <section class="surface-card registration-section">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Dữ liệu sinh viên</p>
+            <h2>Dữ liệu đăng ký sinh viên</h2>
+          </div>
 
-        <div class="filter-group">
-          <label for="registrationFilter">Lọc theo sự kiện</label>
-          <select id="registrationFilter"></select>
+          <div class="filter-group">
+            <label for="registrationFilter">Lọc theo sự kiện</label>
+            <select id="registrationFilter"></select>
+          </div>
         </div>
-      </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Mã sự kiện</th>
-              <th>Tên sự kiện</th>
-              <th>Họ tên</th>
-              <th>MSSV</th>
-              <th>Khóa</th>
-              <th>Giới tính</th>
-              <th>Thời gian đăng ký</th>
-            </tr>
-          </thead>
+        <div class="table-wrap">
+          <table class="data-table admin-table">
+            <thead>
+              <tr>
+                <th>Mã sự kiện</th>
+                <th>Tên sự kiện</th>
+                <th>Họ tên</th>
+                <th>MSSV</th>
+                <th>Khóa</th>
+                <th>Giới tính</th>
+                <th>Thời gian đăng ký</th>
+              </tr>
+            </thead>
 
-          <tbody id="registrationList"></tbody>
-        </table>
-      </div>
-    </div>
+            <tbody id="registrationList"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
 
     <div id="deleteModal" class="modal">
       <div class="modal-content">
@@ -191,10 +251,11 @@
       </div>
     </div>
 
-    <link rel="stylesheet" href="../../assets/css/admin.css" />
-    <script src="../../assets/js/storage.js"></script>
-    <script src="../../assets/js/admin.js"></script>
-
     <div id="toast" class="toast"></div>
+
+    <script src="../../assets/js/core/utils.js"></script>
+    <script src="../../assets/js/core/storage.js"></script>
+    <script src="../../assets/js/core/auth.js"></script>
+    <script src="../../assets/js/pages/admin.js"></script>
   </body>
 </html>
