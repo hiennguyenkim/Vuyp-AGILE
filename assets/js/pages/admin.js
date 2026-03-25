@@ -4,6 +4,7 @@ let deleteEventId = null;
 let recentlySavedEventId = null;
 let selectedDetailEventId = null;
 let currentUser = null;
+let cameraStream = null;
 
 const form = document.getElementById("eventForm");
 const list = document.getElementById("eventList");
@@ -555,11 +556,15 @@ document.getElementById("cancelDelete").onclick = function () {
 registrationFilter.addEventListener("change", renderRegistrations);
 
 window.onclick = function (event) {
-  const modal = document.getElementById("deleteModal");
-  if (event.target === modal) {
-    modal.style.display = "none";
+  const deleteModal = document.getElementById("deleteModal");
+  const cameraModal = document.getElementById("cameraModal");
+  if (event.target === deleteModal) {
+    deleteModal.style.display = "none";
     deleteEventId = null;
     deleteMessage.innerText = "Bạn có chắc chắn muốn xóa sự kiện này không?";
+  }
+  if (event.target === cameraModal) {
+    closeCameraModal();
   }
 };
 
@@ -584,4 +589,83 @@ function showToast(message) {
 if (loadState()) {
   renderAdminSession();
   renderEvents();
+}
+
+document
+.addEventListener('DOMContentLoaded', () => {
+    const btnOpenCamera = document.getElementById('btn-open-camera');
+    const btnCloseCamera = document.getElementById('btn-close-camera');
+    const videoElement = document.getElementById('camera-preview');
+    
+    let cameraStream = null;
+
+    btnOpenCamera.addEventListener('click', async () => {
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  facingMode: "environment" 
+                } 
+            });
+            
+            videoElement.srcObject = cameraStream;
+            
+            videoElement.style.display = 'block';
+            btnOpenCamera.style.display = 'none';
+            btnCloseCamera.style.display = 'inline-block';
+            
+        } catch (error) {
+            console.error('Lỗi khi truy cập camera:', error);
+            alert('Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!');
+        }
+    });
+
+    btnCloseCamera.addEventListener('click', () => {
+        if (cameraStream) {
+            const tracks = cameraStream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
+        videoElement.srcObject = null;
+        videoElement.style.display = 'none';
+        btnCloseCamera.style.display = 'none';
+        btnOpenCamera.style.display = 'inline-block';
+    });
+});
+
+async function startCamera() {
+  const videoElement = document.getElementById('camera-preview');
+  const errorBox = document.getElementById('camera-error');
+  errorBox.style.display = 'none';
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+    videoElement.srcObject = cameraStream;
+  } catch (error) {
+    console.error('Lỗi khi truy cập camera:', error);
+    errorBox.innerText = 'Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!';
+    errorBox.style.display = 'block';
+  }
+}
+
+function stopCamera() {
+  const videoElement = document.getElementById('camera-preview');
+  if (cameraStream) {
+    const tracks = cameraStream.getTracks();
+    tracks.forEach(track => track.stop());
+    cameraStream = null;
+  }
+  if (videoElement) {
+    videoElement.srcObject = null;
+  }
+}
+
+function openCameraModal() {
+  document.getElementById('cameraModal').style.display = 'flex';
+  startCamera();
+}
+
+function closeCameraModal() {
+  document.getElementById('cameraModal').style.display = 'none';
+  stopCamera();
 }
