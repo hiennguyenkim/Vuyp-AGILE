@@ -25,6 +25,9 @@
           </div>
 
           <div class="admin-session-actions">
+            <button type="button" id="btnOpenCameraModal" class="btn-primary topbar-btn" onclick="openCameraModal()">
+              Mở Camera QR
+            </button>
             <button type="button" id="homeBtn" class="secondary-btn topbar-btn">
               Trang chủ
             </button>
@@ -252,6 +255,24 @@
     </div>
 
     <div id="toast" class="toast"></div>
+    <div id="cameraModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;"><span class="close" onclick="closeCameraModal()">&times;</span>
+      <h3 style="color: var(--color-brand-strong); margin-bottom: 8px;">Quét QR Check-in</h3>
+        <p style="margin-bottom: 16px;">Đưa mã QR của sinh viên vào khung hình để quét.</p>
+          <div style="margin-bottom: 20px;">
+            <video id="camera-preview" autoplay playsinline style="width: 100%; 
+              border-radius: 12px; 
+              border: 2px dashed var(--color-border-strong); 
+              background: #000; 
+              min-height: 300px;">
+            </video>
+          <div id="camera-error" class="error-message" style="display: none; margin-top: 10px;"></div>
+    </div>
+    <div class="modal-buttons">
+      <button id="closeCameraBtn" class="secondary-btn" onclick="closeCameraModal()">Đóng Camera</button>
+    </div>
+  </div>
+</div>
 
     <script src="../../assets/js/core/utils.js"></script>
     <script src="../../assets/js/core/storage.js"></script>
