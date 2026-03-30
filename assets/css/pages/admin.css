@@ -286,11 +286,6 @@ textarea {
   color: var(--color-text);
 }
 
-#camera-preview {
-  transform: scaleX(-1);
-  -webkit-transform: scaleX(-1); 
-}
-
 @media (max-width: 960px) {
   .stats-grid,
   .form-grid,

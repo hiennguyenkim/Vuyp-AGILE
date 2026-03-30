@@ -183,7 +183,8 @@ function renderDetailPanel(eventId) {
     event.end,
   );
   document.getElementById("detailLocation").innerText = event.location;
-  document.getElementById("detailCapacity").innerText = `${event.registered}/${event.max}`;
+  document.getElementById("detailCapacity").innerText =
+    `${event.registered}/${event.max}`;
 }
 
 function setEditingEvent(event) {
@@ -205,7 +206,8 @@ function updateSummary() {
 
   document.getElementById("totalEvents").innerText = events.length;
   document.getElementById("openEvents").innerText = openEvents;
-  document.getElementById("totalRegistrations").innerText = registrations.length;
+  document.getElementById("totalRegistrations").innerText =
+    registrations.length;
 }
 
 function renderEvents() {
@@ -292,7 +294,9 @@ function fillRegistrationFilter() {
 function renderRegistrations() {
   const selectedEventId = registrationFilter.value;
   const filteredRegistrations = selectedEventId
-    ? registrations.filter((registration) => registration.eventId === selectedEventId)
+    ? registrations.filter(
+        (registration) => registration.eventId === selectedEventId,
+      )
     : registrations;
 
   if (filteredRegistrations.length === 0) {
@@ -398,9 +402,11 @@ form.addEventListener("submit", function (event) {
   const validationResult = validateEventPayload(payload, currentEvent);
 
   if (validationResult.message) {
-    Object.entries(validationResult.fieldErrors).forEach(([fieldId, message]) => {
-      setFieldError(fieldId, message);
-    });
+    Object.entries(validationResult.fieldErrors).forEach(
+      ([fieldId, message]) => {
+        setFieldError(fieldId, message);
+      },
+    );
     errorBox.innerText = validationResult.message;
     return;
   }
@@ -450,6 +456,7 @@ function viewEventDetail(eventId) {
     return;
   }
   resetMessages();
+  renderDetailPanel(eventId);
   renderDetailPanel(eventId);
   detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -535,9 +542,11 @@ Object.keys(requiredFields).forEach((fieldId) => {
   document.getElementById(fieldId).addEventListener("input", function () {
     syncInlineValidation(fieldId);
 
-    const hasInlineErrors = Object.values(fieldErrorElements).some((element) => {
-      return element.innerText.trim() !== "";
-    });
+    const hasInlineErrors = Object.values(fieldErrorElements).some(
+      (element) => {
+        return element.innerText.trim() !== "";
+      },
+    );
 
     if (!hasInlineErrors) {
       errorBox.innerText = "";
@@ -591,68 +600,124 @@ if (loadState()) {
   renderEvents();
 }
 
-document
-.addEventListener('DOMContentLoaded', () => {
-    const btnOpenCamera = document.getElementById('btn-open-camera');
-    const btnCloseCamera = document.getElementById('btn-close-camera');
-    const videoElement = document.getElementById('camera-preview');
-    
-    let cameraStream = null;
+document.addEventListener("DOMContentLoaded", () => {
+  const btnOpenCamera = document.getElementById("btn-open-camera");
+  const btnCloseCamera = document.getElementById("btn-close-camera");
+  const videoElement = document.getElementById("camera-preview");
 
-    btnOpenCamera.addEventListener('click', async () => {
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                  facingMode: "environment" 
-                } 
-            });
-            
-            videoElement.srcObject = cameraStream;
-            
-            videoElement.style.display = 'block';
-            btnOpenCamera.style.display = 'none';
-            btnCloseCamera.style.display = 'inline-block';
-            
-        } catch (error) {
-            console.error('Lỗi khi truy cập camera:', error);
-            alert('Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!');
-        }
-    });
+  let cameraStream = null;
 
-    btnCloseCamera.addEventListener('click', () => {
-        if (cameraStream) {
-            const tracks = cameraStream.getTracks();
-            tracks.forEach(track => track.stop());
-        }
-        videoElement.srcObject = null;
-        videoElement.style.display = 'none';
-        btnCloseCamera.style.display = 'none';
-        btnOpenCamera.style.display = 'inline-block';
-    });
+  btnOpenCamera.addEventListener("click", async () => {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+        },
+      });
+
+      videoElement.srcObject = cameraStream;
+
+      videoElement.style.display = "block";
+      btnOpenCamera.style.display = "none";
+      btnCloseCamera.style.display = "inline-block";
+    } catch (error) {
+      console.error("Lỗi khi truy cập camera:", error);
+      alert(
+        "Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!",
+      );
+    }
+  });
+
+  btnCloseCamera.addEventListener("click", () => {
+    if (cameraStream) {
+      const tracks = cameraStream.getTracks();
+      tracks.forEach((track) => track.stop());
+    }
+    videoElement.srcObject = null;
+    videoElement.style.display = "none";
+    btnCloseCamera.style.display = "none";
+    btnOpenCamera.style.display = "inline-block";
+  });
 });
 
+/* ============================================================
+   LƯU CHECK-IN VÀ ĐỒNG BỘ VỚI HỆ THỐNG REGISTRATIONS
+============================================================ */
+function saveCheckIn(mssv) {
+  // Lấy sự kiện đang quét
+  const eventId = localStorage.getItem("currentEventId");
+  if (!eventId) {
+    console.warn("Không tìm thấy eventId để ghi check-in.");
+    return;
+  }
+
+  // Đọc dữ liệu hệ thống
+  const state = ClubStorage.readState();
+
+  const event = state.events.find((e) => e.id === eventId);
+  if (!event) {
+    console.warn("Không tìm thấy sự kiện.");
+    return;
+  }
+
+  // Xem có đăng ký trước chưa
+  const existed = state.registrations.find((r) => {
+    return r.eventId === eventId && r.studentId === mssv;
+  });
+
+  if (existed) {
+    existed.checkedIn = true;
+    existed.checkedInAt = new Date().toISOString();
+  } else {
+    // Tạo bản ghi check-in mới
+    state.registrations.push({
+      id: crypto.randomUUID(),
+      eventId: eventId,
+      eventName: event.name,
+      eventCode: event.code,
+      studentId: mssv,
+      studentName: "",
+      studentGender: "",
+      studentCourse: "",
+      registeredAt: new Date().toISOString(),
+      checkedIn: true,
+      checkedInAt: new Date().toISOString(),
+    });
+
+    // Tăng số người đã check in (nếu bạn muốn)
+    event.registered = Number(event.registered || 0) + 1;
+  }
+
+  ClubStorage.writeState(state);
+  console.log("✔ CHECK-IN THÀNH CÔNG:", mssv);
+
+  loadState();
+  renderRegistrations();
+}
+
 async function startCamera() {
-  const videoElement = document.getElementById('camera-preview');
-  const errorBox = document.getElementById('camera-error');
-  errorBox.style.display = 'none';
+  const videoElement = document.getElementById("camera-preview");
+  const errorBox = document.getElementById("camera-error");
+  errorBox.style.display = "none";
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
+      video: { facingMode: "environment" },
     });
     videoElement.srcObject = cameraStream;
   } catch (error) {
-    console.error('Lỗi khi truy cập camera:', error);
-    errorBox.innerText = 'Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!';
-    errorBox.style.display = 'block';
+    console.error("Lỗi khi truy cập camera:", error);
+    errorBox.innerText =
+      "Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!";
+    errorBox.style.display = "block";
   }
 }
 
 function stopCamera() {
-  const videoElement = document.getElementById('camera-preview');
+  const videoElement = document.getElementById("camera-preview");
   if (cameraStream) {
     const tracks = cameraStream.getTracks();
-    tracks.forEach(track => track.stop());
+    tracks.forEach((track) => track.stop());
     cameraStream = null;
   }
   if (videoElement) {
@@ -661,11 +726,30 @@ function stopCamera() {
 }
 
 function openCameraModal() {
-  document.getElementById('cameraModal').style.display = 'flex';
+  document.getElementById("cameraModal").style.display = "flex";
   startCamera();
 }
 
+const html5Qr = new Html5Qrcode("camera-preview");
+
+html5Qr.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  (decodedText) => {
+    console.log("Đã quét:", decodedText);
+    const mssv = decodedText.trim();
+
+    if (mssv.length >= 7) {
+      saveCheckIn(mssv);
+      showToast("✔ Check-in thành công");
+    } else {
+      showToast("❌ QR không hợp lệ");
+    }
+  },
+  (error) => {},
+);
+
 function closeCameraModal() {
-  document.getElementById('cameraModal').style.display = 'none';
+  document.getElementById("cameraModal").style.display = "none";
   stopCamera();
 }
