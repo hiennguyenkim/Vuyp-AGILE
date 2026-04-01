@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đang chuyển hướng</title>
+    <script>
+      const target = `pages/student/qr.html${window.location.search}${window.location.hash}`;
+      window.location.replace(target);
+    </script>
+  </head>
+  <body>
+    <p>
+      Đang chuyển tới trang QR sinh viên.
+      <a href="pages/student/qr.html">Tiếp tục</a>
+    </p>
+  </body>
+</html>

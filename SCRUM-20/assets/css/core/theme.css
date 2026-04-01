@@ -1,0 +1,43 @@
+:root {
+  --font-base: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Trebuchet MS", "Segoe UI", sans-serif;
+  --color-brand: #114f96;
+  --color-brand-strong: #0c3d71;
+  --color-accent: #c32039;
+  --color-accent-strong: #99192d;
+  --color-success: #1f7a45;
+  --color-warning: #9d5d00;
+  --color-muted: #5a6f84;
+  --color-text: #203042;
+  --color-text-soft: #4f657b;
+  --color-border: #d7e3ef;
+  --color-border-strong: #c6d6e6;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f7fafe;
+  --color-surface-tint: #eef4fb;
+  --color-danger-soft: #fff1f2;
+  --color-success-soft: #ebf7ef;
+  --color-warning-soft: #fff5e7;
+  --color-neutral-soft: #edf1f5;
+  --page-background: #edf3f9;
+  --shadow-sm: 0 10px 22px rgba(0, 39, 79, 0.06);
+  --shadow-md: 0 18px 36px rgba(0, 39, 79, 0.08);
+  --shadow-lg: 0 24px 50px rgba(0, 39, 79, 0.1);
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  color: var(--color-brand-strong);
+}
+
+p {
+  margin: 0;
+}
