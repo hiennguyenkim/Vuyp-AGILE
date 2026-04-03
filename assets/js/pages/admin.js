@@ -699,3 +699,73 @@ function showBigAlert() {
 
 }
 
+function exportCheckinExcel() {
+
+  if (!loadState()) return;
+
+  // Lọc chỉ người đã check-in
+  let checkedStudents =
+    registrations.filter(
+      r => r.checkinStatus === "Đã checkin"
+    );
+
+  if (checkedStudents.length === 0) {
+
+    alert("Không có sinh viên đã check-in!");
+
+    return;
+
+  }
+
+  // Chuẩn bị dữ liệu
+  let data = checkedStudents.map(r => ({
+
+    "Mã sự kiện":
+      r.eventCode || "-",
+
+    "Tên sự kiện":
+      r.eventName || "-",
+
+    "Họ tên":
+      r.studentName || "-",
+
+    "MSSV":
+      r.studentId || "-",
+
+    "Khóa":
+      r.studentCourse || "-",
+
+    "Giới tính":
+      r.studentGender || "-",
+
+    "Trạng thái":
+      r.checkinStatus,
+
+    "Thời gian đăng ký":
+      ClubStorage.formatDateTime(
+        r.registeredAt
+      )
+
+  }));
+
+  // Tạo worksheet
+  let ws =
+    XLSX.utils.json_to_sheet(data);
+
+  // Tạo workbook
+  let wb =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    "DanhSachCheckin"
+  );
+
+  // Xuất file
+  XLSX.writeFile(
+    wb,
+    "Danh_sach_checkin.xlsx"
+  );
+
+}

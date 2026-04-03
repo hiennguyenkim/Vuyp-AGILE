@@ -128,6 +128,11 @@
           <p class="section-eyebrow">Dữ liệu sự kiện</p>
           <h2>Danh sách sự kiện</h2>
         </div>
+        <div class="export-box">
+          <button onclick="exportCheckinExcel()" class="export-btn">
+            Xuất danh sách Check-in ra Excel
+          </button>
+        </div>
       </div>
 
       <div class="scan-box">
@@ -270,6 +275,7 @@
 
   <div id="toast" class="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="../../assets/js/core/utils.js"></script>
   <script src="../../assets/js/core/storage.js"></script>
   <script src="../../assets/js/core/auth.js"></script>

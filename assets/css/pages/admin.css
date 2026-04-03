@@ -344,7 +344,7 @@ textarea {
   cursor: pointer;
 }
 
-s .admin-table {
+.admin-table {
   width: 100%;
   border-collapse: collapse;
 }
@@ -391,5 +391,36 @@ s .admin-table {
   text-align: center;
 
   margin-bottom: 20px;
+
+}
+
+.export-box {
+  display: flex;
+  align-items: center;
+}
+
+.export-btn {
+
+  background: #16a34a;
+  color: white;
+
+  padding: 10px 16px;
+
+  border: none;
+  border-radius: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+
+}
+
+.export-btn:hover {
+
+  background: #15803d;
+
+  transform: translateY(-1px);
 
 }
