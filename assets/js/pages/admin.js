@@ -4,6 +4,7 @@ let deleteEventId = null;
 let recentlySavedEventId = null;
 let selectedDetailEventId = null;
 let currentUser = null;
+let cameraStream = null;
 
 const form = document.getElementById("eventForm");
 const list = document.getElementById("eventList");
@@ -196,7 +197,8 @@ function renderDetailPanel(eventId) {
     event.end,
   );
   document.getElementById("detailLocation").innerText = event.location;
-  document.getElementById("detailCapacity").innerText = `${event.registered}/${event.max}`;
+  document.getElementById("detailCapacity").innerText =
+    `${event.registered}/${event.max}`;
 }
 
 function setEditingEvent(event) {
@@ -218,7 +220,8 @@ function updateSummary() {
 
   document.getElementById("totalEvents").innerText = events.length;
   document.getElementById("openEvents").innerText = openEvents;
-  document.getElementById("totalRegistrations").innerText = registrations.length;
+  document.getElementById("totalRegistrations").innerText =
+    registrations.length;
 }
 
 function renderEvents() {
@@ -305,7 +308,9 @@ function fillRegistrationFilter() {
 function renderRegistrations() {
   const selectedEventId = registrationFilter.value;
   const filteredRegistrations = selectedEventId
-    ? registrations.filter((registration) => registration.eventId === selectedEventId)
+    ? registrations.filter(
+        (registration) => registration.eventId === selectedEventId,
+      )
     : registrations;
 
   if (filteredRegistrations.length === 0) {
@@ -425,9 +430,11 @@ form.addEventListener("submit", function (event) {
   const validationResult = validateEventPayload(payload, currentEvent);
 
   if (validationResult.message) {
-    Object.entries(validationResult.fieldErrors).forEach(([fieldId, message]) => {
-      setFieldError(fieldId, message);
-    });
+    Object.entries(validationResult.fieldErrors).forEach(
+      ([fieldId, message]) => {
+        setFieldError(fieldId, message);
+      },
+    );
     errorBox.innerText = validationResult.message;
     return;
   }
@@ -477,6 +484,7 @@ function viewEventDetail(eventId) {
     return;
   }
   resetMessages();
+  renderDetailPanel(eventId);
   renderDetailPanel(eventId);
   detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -562,9 +570,11 @@ Object.keys(requiredFields).forEach((fieldId) => {
   document.getElementById(fieldId).addEventListener("input", function () {
     syncInlineValidation(fieldId);
 
-    const hasInlineErrors = Object.values(fieldErrorElements).some((element) => {
-      return element.innerText.trim() !== "";
-    });
+    const hasInlineErrors = Object.values(fieldErrorElements).some(
+      (element) => {
+        return element.innerText.trim() !== "";
+      },
+    );
 
     if (!hasInlineErrors) {
       errorBox.innerText = "";
@@ -583,11 +593,15 @@ document.getElementById("cancelDelete").onclick = function () {
 registrationFilter.addEventListener("change", renderRegistrations);
 
 window.onclick = function (event) {
-  const modal = document.getElementById("deleteModal");
-  if (event.target === modal) {
-    modal.style.display = "none";
+  const deleteModal = document.getElementById("deleteModal");
+  const cameraModal = document.getElementById("cameraModal");
+  if (event.target === deleteModal) {
+    deleteModal.style.display = "none";
     deleteEventId = null;
     deleteMessage.innerText = "Bạn có chắc chắn muốn xóa sự kiện này không?";
+  }
+  if (event.target === cameraModal) {
+    closeCameraModal();
   }
 };
 
