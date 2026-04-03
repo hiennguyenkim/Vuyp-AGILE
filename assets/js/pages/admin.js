@@ -8,7 +8,7 @@ let cameraStream = null;
 
 const form = document.getElementById("eventForm");
 const list = document.getElementById("eventList");
-const registrationList = document.getElementById("registrationList");
+const registrationList = document.getElementById("checkinList");
 const registrationFilter = document.getElementById("registrationFilter");
 const deleteMessage = document.getElementById("deleteMessage");
 const errorBox = document.getElementById("error");
@@ -70,7 +70,21 @@ function loadState() {
 
   const state = ClubStorage.readState();
   events = ClubStorage.sortEvents(state.events);
-  registrations = ClubStorage.sortRegistrations(state.registrations);
+  registrations =
+    ClubStorage.sortRegistrations(
+      state.registrations
+    );
+
+  // mặc định checkin
+  registrations.forEach(r => {
+
+    if (!r.checkinStatus) {
+
+      r.checkinStatus = "Chưa checkin";
+
+    }
+
+  });
   return true;
 }
 
@@ -235,8 +249,8 @@ function renderEvents() {
           <td>${escapeHtml(event.code)}</td>
           <td>${escapeHtml(event.name)}</td>
           <td>${escapeHtml(
-            ClubStorage.formatDateRange(event.start, event.end),
-          )}</td>
+        ClubStorage.formatDateRange(event.start, event.end),
+      )}</td>
           <td>${escapeHtml(event.location)}</td>
           <td>${event.registered}/${event.max}</td>
           <td>
@@ -302,7 +316,7 @@ function renderRegistrations() {
   if (filteredRegistrations.length === 0) {
     registrationList.innerHTML = `
       <tr>
-        <td colspan="7">Chưa có dữ liệu đăng ký phù hợp với bộ lọc hiện tại.</td>
+        <td colspan="8">Chưa có dữ liệu đăng ký phù hợp với bộ lọc hiện tại.</td>
       </tr>
     `;
     return;
@@ -318,7 +332,21 @@ function renderRegistrations() {
           <td>${escapeHtml(registration.studentId || "-")}</td>
           <td>${escapeHtml(registration.studentCourse || "-")}</td>
           <td>${escapeHtml(registration.studentGender || "-")}</td>
-          <td>${escapeHtml(ClubStorage.formatDateTime(registration.registeredAt))}</td>
+
+<td class="${registration.checkinStatus === "Đã checkin"
+          ? "status-checked"
+          : "status-notchecked"
+        }">
+${registration.checkinStatus || "Chưa checkin"}
+</td>
+
+<td>
+${escapeHtml(
+          ClubStorage.formatDateTime(
+            registration.registeredAt
+          )
+        )}
+</td>
         </tr>
       `;
     })
@@ -600,156 +628,158 @@ if (loadState()) {
   renderEvents();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const btnOpenCamera = document.getElementById("btn-open-camera");
-  const btnCloseCamera = document.getElementById("btn-close-camera");
-  const videoElement = document.getElementById("camera-preview");
 
-  let cameraStream = null;
+function scanQR() {
 
-  btnOpenCamera.addEventListener("click", async () => {
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-        },
-      });
+  let mssv =
+    document
+      .getElementById("scanInput")
+      .value
+      .trim();
 
-      videoElement.srcObject = cameraStream;
+  if (!mssv) {
 
-      videoElement.style.display = "block";
-      btnOpenCamera.style.display = "none";
-      btnCloseCamera.style.display = "inline-block";
-    } catch (error) {
-      console.error("Lỗi khi truy cập camera:", error);
-      alert(
-        "Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!",
-      );
-    }
-  });
+    alert("Nhập MSSV!");
 
-  btnCloseCamera.addEventListener("click", () => {
-    if (cameraStream) {
-      const tracks = cameraStream.getTracks();
-      tracks.forEach((track) => track.stop());
-    }
-    videoElement.srcObject = null;
-    videoElement.style.display = "none";
-    btnCloseCamera.style.display = "none";
-    btnOpenCamera.style.display = "inline-block";
-  });
-});
-
-/* ============================================================
-   LƯU CHECK-IN VÀ ĐỒNG BỘ VỚI HỆ THỐNG REGISTRATIONS
-============================================================ */
-function saveCheckIn(mssv) {
-  // Lấy sự kiện đang quét
-  const eventId = localStorage.getItem("currentEventId");
-  if (!eventId) {
-    console.warn("Không tìm thấy eventId để ghi check-in.");
     return;
+
   }
 
-  // Đọc dữ liệu hệ thống
-  const state = ClubStorage.readState();
+  handleCheckin(mssv);
 
-  const event = state.events.find((e) => e.id === eventId);
-  if (!event) {
-    console.warn("Không tìm thấy sự kiện.");
+  document.getElementById("scanInput").value = "";
+
+}
+
+
+function handleCheckin(studentId) {
+
+  if (!loadState()) return;
+
+  let student =
+    registrations.find(
+      s => s.studentId === studentId
+    );
+
+  if (!student) {
+
+    alert("Không tìm thấy sinh viên");
+
     return;
+
   }
 
-  // Xem có đăng ký trước chưa
-  const existed = state.registrations.find((r) => {
-    return r.eventId === eventId && r.studentId === mssv;
-  });
+  // LẦN 1
+  if (student.checkinStatus !== "Đã checkin") {
 
-  if (existed) {
-    existed.checkedIn = true;
-    existed.checkedInAt = new Date().toISOString();
-  } else {
-    // Tạo bản ghi check-in mới
-    state.registrations.push({
-      id: crypto.randomUUID(),
-      eventId: eventId,
-      eventName: event.name,
-      eventCode: event.code,
-      studentId: mssv,
-      studentName: "",
-      studentGender: "",
-      studentCourse: "",
-      registeredAt: new Date().toISOString(),
-      checkedIn: true,
-      checkedInAt: new Date().toISOString(),
+    student.checkinStatus = "Đã checkin";
+
+    student.checkinTime =
+      new Date().toISOString();
+
+    ClubStorage.writeState({
+      events,
+      registrations
     });
 
-    // Tăng số người đã check in (nếu bạn muốn)
-    event.registered = Number(event.registered || 0) + 1;
+    renderRegistrations();
+
+    showToast("Check-in thành công");
+
   }
 
-  ClubStorage.writeState(state);
-  console.log("✔ CHECK-IN THÀNH CÔNG:", mssv);
+  // LẦN 2
+  else {
 
-  loadState();
-  renderRegistrations();
-}
+    showBigAlert();
 
-async function startCamera() {
-  const videoElement = document.getElementById("camera-preview");
-  const errorBox = document.getElementById("camera-error");
-  errorBox.style.display = "none";
-
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-    });
-    videoElement.srcObject = cameraStream;
-  } catch (error) {
-    console.error("Lỗi khi truy cập camera:", error);
-    errorBox.innerText =
-      "Không thể mở camera. Vui lòng kiểm tra quyền truy cập của trình duyệt!";
-    errorBox.style.display = "block";
   }
+
 }
 
-function stopCamera() {
-  const videoElement = document.getElementById("camera-preview");
-  if (cameraStream) {
-    const tracks = cameraStream.getTracks();
-    tracks.forEach((track) => track.stop());
-    cameraStream = null;
+
+function showBigAlert() {
+
+  let alertBox =
+    document.getElementById("bigAlert");
+
+  alertBox.style.display = "block";
+
+  setTimeout(() => {
+
+    alertBox.style.display = "none";
+
+  }, 3000);
+
+}
+
+function exportCheckinExcel() {
+
+  if (!loadState()) return;
+
+  // Lọc chỉ người đã check-in
+  let checkedStudents =
+    registrations.filter(
+      r => r.checkinStatus === "Đã checkin"
+    );
+
+  if (checkedStudents.length === 0) {
+
+    alert("Không có sinh viên đã check-in!");
+
+    return;
+
   }
-  if (videoElement) {
-    videoElement.srcObject = null;
-  }
-}
 
-function openCameraModal() {
-  document.getElementById("cameraModal").style.display = "flex";
-  startCamera();
-}
+  // Chuẩn bị dữ liệu
+  let data = checkedStudents.map(r => ({
 
-const html5Qr = new Html5Qrcode("camera-preview");
+    "Mã sự kiện":
+      r.eventCode || "-",
 
-html5Qr.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  (decodedText) => {
-    console.log("Đã quét:", decodedText);
-    const mssv = decodedText.trim();
+    "Tên sự kiện":
+      r.eventName || "-",
 
-    if (mssv.length >= 7) {
-      saveCheckIn(mssv);
-      showToast("✔ Check-in thành công");
-    } else {
-      showToast("❌ QR không hợp lệ");
-    }
-  },
-  (error) => {},
-);
+    "Họ tên":
+      r.studentName || "-",
 
-function closeCameraModal() {
-  document.getElementById("cameraModal").style.display = "none";
-  stopCamera();
+    "MSSV":
+      r.studentId || "-",
+
+    "Khóa":
+      r.studentCourse || "-",
+
+    "Giới tính":
+      r.studentGender || "-",
+
+    "Trạng thái":
+      r.checkinStatus,
+
+    "Thời gian đăng ký":
+      ClubStorage.formatDateTime(
+        r.registeredAt
+      )
+
+  }));
+
+  // Tạo worksheet
+  let ws =
+    XLSX.utils.json_to_sheet(data);
+
+  // Tạo workbook
+  let wb =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    "DanhSachCheckin"
+  );
+
+  // Xuất file
+  XLSX.writeFile(
+    wb,
+    "Danh_sach_checkin.xlsx"
+  );
+
 }
