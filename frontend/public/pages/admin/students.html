@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản Lý Sinh Viên | Quản trị viên</title>
+    <link rel="stylesheet" href="../../../src/assets/css/base.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/components.css" />
+    <link rel="stylesheet" href="../../../src/pages/admin/students.css" />
+  </head>
+  <body>
+    <main class="page-shell page-shell-wide students-shell">
+      <header class="surface-card students-topbar">
+        <div class="students-topbar-copy">
+          <div class="students-topbar-meta">
+            <button type="button" id="backToAdminBtn" class="secondary-btn topbar-btn">
+              Quay lại quản trị
+            </button>
+            <span class="section-eyebrow">Phân hệ quản trị HCMUE</span>
+          </div>
+
+          <h1>Quản Lý Sinh Viên</h1>
+          <span class="students-topbar-note">
+            Theo dõi danh sách, tạo mới, cập nhật và xóa từng tài khoản sinh viên mà không cần chuẩn bị file Excel.
+          </span>
+        </div>
+
+        <div class="admin-session-summary">
+          <strong id="adminName">Quản trị viên</strong>
+          <span id="adminRole">Đang xác thực tài khoản</span>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <div class="surface-card stat-card">
+          <span id="totalStudentsStat">0</span>
+          <small>Tổng sinh viên</small>
+        </div>
+
+        <div class="surface-card stat-card">
+          <span id="filteredStudentsStat">0</span>
+          <small>Kết quả đang xem</small>
+        </div>
+
+        <div class="surface-card stat-card">
+          <span id="courseCountStat">0</span>
+          <small>Số khóa đang có</small>
+        </div>
+      </section>
+
+      <section class="surface-card student-management-section">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Dữ liệu sinh viên</p>
+            <h2>Danh sách tài khoản sinh viên</h2>
+          </div>
+
+          <div class="students-toolbar">
+            <input
+              type="search"
+              id="studentSearchInput"
+              class="student-search-input"
+              placeholder="Tìm theo MSSV, họ tên, login ID hoặc email"
+            />
+            <select id="studentCourseFilter" class="student-filter-select" aria-label="Lọc theo khóa">
+              <option value="">Tất cả khóa</option>
+            </select>
+            <select
+              id="studentGenderFilter"
+              class="student-filter-select"
+              aria-label="Lọc theo giới tính"
+            >
+              <option value="">Tất cả giới tính</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+              <option value="Khác">Khác</option>
+              <option value="__empty__">Chưa cập nhật</option>
+            </select>
+            <button type="button" id="addStudentBtn" class="detail-btn student-add-btn">
+              + Tạo tài khoản sinh viên
+            </button>
+          </div>
+        </div>
+
+        <div class="student-bulk-actions">
+          <label class="student-select-all" for="selectAllStudents">
+            <input type="checkbox" id="selectAllStudents" />
+            <span>Chọn tất cả kết quả đang xem</span>
+          </label>
+
+          <span id="selectedStudentsCount" class="selected-students-count">
+            Chưa chọn sinh viên nào.
+          </span>
+
+          <button
+            type="button"
+            id="bulkDeleteStudentsBtn"
+            class="secondary-btn bulk-delete-btn"
+            disabled
+          >
+            Xóa đã chọn
+          </button>
+        </div>
+
+        <div id="studentError" class="error"></div>
+        <div id="studentSuccess" class="success"></div>
+
+        <p id="studentTableMeta" class="student-table-meta">
+          Đang tải danh sách sinh viên từ hệ thống.
+        </p>
+
+        <div class="table-wrap">
+          <table class="data-table admin-table">
+            <thead>
+              <tr>
+                <th class="student-select-column">Chọn</th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="studentId">
+                    <span>MSSV</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="studentName">
+                    <span>Họ tên</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="loginId">
+                    <span>Login ID</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="email">
+                    <span>Email</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="studentCourse">
+                    <span>Khóa</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>
+                  <button type="button" class="student-sort-button" data-sort-field="studentGender">
+                    <span>Giới tính</span>
+                    <span class="student-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+
+            <tbody id="studentList">
+              <tr>
+                <td colspan="8">Đang tải danh sách sinh viên.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="studentModal" class="modal">
+      <div class="modal-content student-modal-content">
+        <h3 id="studentModalTitle">Tạo tài khoản sinh viên</h3>
+        <p id="studentModalCopy" class="student-modal-copy">
+          Tạo hoặc cập nhật tài khoản đăng nhập trong Supabase Auth và bảng <code>profiles</code>.
+        </p>
+
+        <form id="studentForm" class="student-form" novalidate>
+          <input type="hidden" id="studentRecordId" />
+
+          <div class="student-form-grid">
+            <div class="field-block">
+              <label for="studentNameInput">Họ tên <span class="required">*</span></label>
+              <input type="text" id="studentNameInput" required />
+            </div>
+
+            <div class="field-block">
+              <label for="studentIdInput">MSSV <span class="required">*</span></label>
+              <input type="text" id="studentIdInput" required />
+            </div>
+
+            <div class="field-block">
+              <label for="studentLoginIdInput">Login ID <span class="required">*</span></label>
+              <input type="text" id="studentLoginIdInput" required />
+            </div>
+
+            <div class="field-block">
+              <label for="studentEmailInput">Email</label>
+              <input type="email" id="studentEmailInput" />
+              <p class="field-hint">
+                Để trống nếu muốn hệ thống tự ghép email từ login ID và domain mặc định trong `.env`.
+              </p>
+            </div>
+
+            <div class="field-block">
+              <label for="studentCourseInput">Khóa</label>
+              <input type="text" id="studentCourseInput" />
+            </div>
+
+            <div class="field-block">
+              <label for="studentGenderInput">Giới tính</label>
+              <select id="studentGenderInput">
+                <option value="">Chưa cập nhật</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+
+            <div class="field-block field-block-full">
+              <label for="studentPasswordInput">Mật khẩu</label>
+              <input type="password" id="studentPasswordInput" />
+              <p id="studentPasswordHint" class="field-hint">
+                Để trống để dùng mật khẩu mặc định trong `.env`.
+              </p>
+            </div>
+          </div>
+
+          <div class="modal-buttons student-modal-buttons">
+            <button type="submit" id="saveStudentBtn">
+              Lưu sinh viên
+            </button>
+            <button type="button" id="cancelStudentBtn" class="secondary-btn">
+              Hủy
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="deleteStudentModal" class="modal">
+      <div class="modal-content">
+        <h3>Xác nhận xóa sinh viên</h3>
+        <p id="deleteStudentMessage">Bạn có chắc chắn muốn xóa sinh viên này không?</p>
+
+        <div class="modal-buttons">
+          <button id="confirmDeleteStudent">Xác nhận</button>
+          <button id="cancelDeleteStudent" class="secondary-btn">Hủy</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="../../../src/services/app-config.js"></script>
+    <script src="../../../src/utils/utils.js"></script>
+    <script type="module" src="../../../src/pages/admin/students.js"></script>
+  </body>
+</html>

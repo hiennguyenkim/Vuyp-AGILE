@@ -57,6 +57,7 @@ Vuyp-AGILE/
 - Backend hien tai tap trung vao runtime server, tool import Excel va tai lieu schema Supabase.
 - Script Supabase con giu lai trong repo nam o `backend/scripts/supabase/`, hien tai chu yeu la `schema.sql` de tham chieu cau truc DB.
 - Tool import sinh vien tu Excel nam trong `backend/tools/student-import/`.
+- Trang quan tri sinh vien thu cong nam o `frontend/public/pages/admin/students.html`, cho phep CRUD tung tai khoan sinh vien qua giao dien admin.
 - Runtime server de deploy nam trong `backend/server.js`; server nay cung serve frontend va endpoint `/app-env.json`.
 - Neu chay local nhanh tu `frontend/`, lenh `npm run start` se goi cung runtime server nay.
 - Neu schema SQL thuc te khac gia dinh mac dinh, hay chinh mapping trong `frontend/src/services/supabase-config.js`.

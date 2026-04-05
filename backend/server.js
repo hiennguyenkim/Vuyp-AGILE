@@ -93,6 +93,28 @@ function normalizeString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeGender(value) {
+  const normalizedValue = normalizeString(value).toLowerCase();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  if (normalizedValue === "nu" || normalizedValue === "nữ") {
+    return "Nữ";
+  }
+
+  if (normalizedValue === "nam") {
+    return "Nam";
+  }
+
+  if (normalizedValue === "khac" || normalizedValue === "khác") {
+    return "Khác";
+  }
+
+  return normalizeString(value);
+}
+
 function parseBoolean(value) {
   const normalizedValue = normalizeString(String(value || "")).toLowerCase();
   return normalizedValue === "true" || normalizedValue === "1" || normalizedValue === "yes";
@@ -164,7 +186,7 @@ async function verifyAdminRequest(request) {
   const profile = profileResult.json[0] || null;
 
   if (normalizeString(profile?.role).toLowerCase() !== "admin") {
-    const error = new Error("Ban khong co quyen su dung chuc nang import sinh vien.");
+    const error = new Error("Ban khong co quyen su dung chuc nang quan tri nay.");
     error.statusCode = 403;
     throw error;
   }
@@ -185,6 +207,28 @@ async function parseMultipartForm(request) {
   });
 
   return wrappedRequest.formData();
+}
+
+async function parseJsonBody(request) {
+  const chunks = [];
+
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  const rawText = Buffer.concat(chunks).toString("utf8").trim();
+
+  if (!rawText) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(rawText);
+  } catch (error) {
+    const parseError = new Error("Noi dung gui len khong phai JSON hop le.");
+    parseError.statusCode = 400;
+    throw parseError;
+  }
 }
 
 function toImportPreview(record) {
@@ -221,6 +265,570 @@ async function withUploadedTempFile(file, callback) {
     return await callback(tempFilePath);
   } finally {
     await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+function getStudentHeaders(serviceRoleKey) {
+  return buildSupabaseHeaders(serviceRoleKey);
+}
+
+function extractApiErrorMessage(payload) {
+  if (!payload) {
+    return "";
+  }
+
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  return normalizeString(
+    payload.msg ||
+      payload.message ||
+      payload.error_description ||
+      payload.error ||
+      JSON.stringify(payload),
+  );
+}
+
+function isAlreadyExistsApiError(payload) {
+  const message = extractApiErrorMessage(payload).toLowerCase();
+  return (
+    message.includes("already") ||
+    message.includes("exists") ||
+    message.includes("duplicate")
+  );
+}
+
+function getDefaultStudentEmailDomain(env) {
+  return (
+    normalizeString(env.SETUP_DEFAULT_EMAIL_DOMAIN) ||
+    normalizeString(env.SUPABASE_AUTH_IDENTITY_DOMAIN)
+  );
+}
+
+function resolveStudentEmail(loginId, explicitEmail, env) {
+  const normalizedEmail = normalizeString(explicitEmail);
+
+  if (normalizedEmail) {
+    return normalizedEmail;
+  }
+
+  const normalizedLoginId = normalizeString(loginId);
+  const defaultDomain = getDefaultStudentEmailDomain(env);
+
+  if (!normalizedLoginId || !defaultDomain) {
+    return "";
+  }
+
+  return `${normalizedLoginId}@${defaultDomain}`;
+}
+
+function normalizeStudentProfileRow(row) {
+  return {
+    createdAt: normalizeString(row?.created_at || row?.createdAt),
+    displayName: normalizeString(row?.display_name || row?.displayName),
+    email: normalizeString(row?.email),
+    id: normalizeString(row?.id),
+    loginId: normalizeString(row?.login_id || row?.loginId),
+    role: normalizeString(row?.role || "student") || "student",
+    studentCourse: normalizeString(row?.student_course || row?.studentCourse),
+    studentGender: normalizeString(row?.student_gender || row?.studentGender),
+    studentId: normalizeString(row?.student_id || row?.studentId),
+    studentName: normalizeString(row?.student_name || row?.studentName),
+    updatedAt: normalizeString(row?.updated_at || row?.updatedAt),
+    username: normalizeString(row?.username),
+  };
+}
+
+function buildStudentMetadata(student) {
+  return {
+    display_name: student.displayName,
+    login_id: student.loginId,
+    role: "student",
+    student_course: student.studentCourse,
+    student_gender: student.studentGender,
+    student_id: student.studentId,
+    student_name: student.studentName,
+  };
+}
+
+function buildStudentProfilePayload(student) {
+  return {
+    display_name: student.displayName,
+    email: student.email,
+    id: student.id,
+    login_id: student.loginId,
+    role: "student",
+    student_course: student.studentCourse,
+    student_gender: student.studentGender,
+    student_id: student.studentId,
+    student_name: student.studentName,
+    username: student.username,
+  };
+}
+
+function buildStudentInput(payload, env, options = {}) {
+  const currentStudent = options.currentStudent || null;
+  const loginId =
+    normalizeString(payload?.loginId) ||
+    normalizeString(payload?.studentId) ||
+    normalizeString(currentStudent?.loginId) ||
+    normalizeString(currentStudent?.studentId);
+  const studentId =
+    normalizeString(payload?.studentId) ||
+    normalizeString(payload?.loginId) ||
+    normalizeString(currentStudent?.studentId) ||
+    normalizeString(currentStudent?.loginId);
+  const studentName =
+    normalizeString(payload?.studentName) ||
+    normalizeString(payload?.displayName) ||
+    normalizeString(currentStudent?.studentName) ||
+    normalizeString(currentStudent?.displayName);
+  const displayName =
+    normalizeString(payload?.displayName) ||
+    studentName ||
+    normalizeString(currentStudent?.displayName);
+  const studentCourse =
+    normalizeString(payload?.studentCourse || payload?.course) ||
+    normalizeString(currentStudent?.studentCourse);
+  const studentGender = normalizeGender(
+    payload?.studentGender || payload?.gender || currentStudent?.studentGender,
+  );
+  const email = resolveStudentEmail(
+    loginId,
+    payload?.email || currentStudent?.email,
+    env,
+  );
+  const rawPassword = normalizeString(payload?.password);
+  const defaultPassword = normalizeString(env.SETUP_DEFAULT_PASSWORD);
+  const password =
+    options.mode === "create" ? rawPassword || defaultPassword : rawPassword;
+  const issues = [];
+
+  if (!studentName) {
+    issues.push("Vui long nhap ho ten sinh vien.");
+  }
+
+  if (!studentId) {
+    issues.push("Vui long nhap MSSV.");
+  }
+
+  if (!loginId) {
+    issues.push("Vui long nhap login ID.");
+  }
+
+  if (!email) {
+    issues.push(
+      "Khong the xac dinh email cho sinh vien. Hay nhap email hoac cau hinh domain mac dinh trong .env.",
+    );
+  }
+
+  if (options.mode === "create" && !password) {
+    issues.push(
+      "Thieu mat khau tao tai khoan. Hay nhap password hoac cau hinh SETUP_DEFAULT_PASSWORD trong .env.",
+    );
+  }
+
+  return {
+    displayName,
+    email,
+    id: normalizeString(options.id || currentStudent?.id),
+    issues,
+    loginId,
+    password,
+    studentCourse,
+    studentGender,
+    studentId,
+    studentName,
+    username: loginId,
+  };
+}
+
+async function fetchStudentProfiles(env, options = {}) {
+  const requestUrl = new URL("/rest/v1/profiles", env.SUPABASE_URL);
+  requestUrl.searchParams.set(
+    "select",
+    "id,email,login_id,role,display_name,student_id,student_name,student_course,student_gender,username,created_at,updated_at",
+  );
+  requestUrl.searchParams.set("role", "eq.student");
+  requestUrl.searchParams.set("order", "student_id.asc");
+
+  if (normalizeString(options.id)) {
+    requestUrl.searchParams.set("id", `eq.${normalizeString(options.id)}`);
+    requestUrl.searchParams.set("limit", "1");
+  }
+
+  const searchTerm = normalizeString(options.search);
+
+  if (searchTerm) {
+    requestUrl.searchParams.set(
+      "or",
+      `(student_id.ilike.*${searchTerm}*,student_name.ilike.*${searchTerm}*,login_id.ilike.*${searchTerm}*,email.ilike.*${searchTerm}*)`,
+    );
+  }
+
+  const result = await requestJson(String(requestUrl), {
+    headers: getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+  });
+
+  if (!result.ok || !Array.isArray(result.json)) {
+    throw new Error(
+      `Khong the tai danh sach sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+
+  return result.json.map((row) => normalizeStudentProfileRow(row));
+}
+
+async function getStudentProfileById(env, studentId) {
+  const students = await fetchStudentProfiles(env, {
+    id: studentId,
+  });
+  return students[0] || null;
+}
+
+async function ensureStudentFieldUnique(env, column, value, excludeId = "") {
+  const normalizedValue = normalizeString(value);
+
+  if (!normalizedValue) {
+    return;
+  }
+
+  const requestUrl = new URL("/rest/v1/profiles", env.SUPABASE_URL);
+  requestUrl.searchParams.set(
+    "select",
+    "id,role,student_id,student_name,login_id,email",
+  );
+  requestUrl.searchParams.set(column, `eq.${normalizedValue}`);
+  requestUrl.searchParams.set("limit", "1");
+
+  const result = await requestJson(String(requestUrl), {
+    headers: getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+  });
+
+  if (!result.ok || !Array.isArray(result.json)) {
+    throw new Error(
+      `Khong the kiem tra trung du lieu sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+
+  const existing = result.json[0] || null;
+
+  if (!existing || normalizeString(existing.id) === normalizeString(excludeId)) {
+    return;
+  }
+
+  const labels = {
+    email: "Email",
+    login_id: "Login ID",
+    student_id: "MSSV",
+  };
+  const error = new Error(`${labels[column] || column} da ton tai trong he thong.`);
+  error.statusCode = 409;
+  throw error;
+}
+
+async function createStudentAuthUser(env, student) {
+  const result = await requestJson(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+    body: JSON.stringify({
+      email: student.email,
+      email_confirm: true,
+      password: student.password,
+      user_metadata: buildStudentMetadata(student),
+    }),
+  });
+
+  if (!result.ok) {
+    const message = isAlreadyExistsApiError(result.json)
+      ? "Email nay da ton tai trong Supabase Auth."
+      : `Khong the tao auth user sinh vien: ${extractApiErrorMessage(result.json)}`;
+    const error = new Error(message);
+    error.statusCode = isAlreadyExistsApiError(result.json) ? 409 : 500;
+    throw error;
+  }
+
+  return normalizeString(result.json?.id);
+}
+
+async function createStudentProfile(env, student) {
+  const existingProfile = await getStudentProfileById(env, student.id);
+
+  if (existingProfile) {
+    return syncStudentProfile(env, student);
+  }
+
+  const result = await requestJson(`${env.SUPABASE_URL}/rest/v1/profiles`, {
+    method: "POST",
+    headers: {
+      ...getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(buildStudentProfilePayload(student)),
+  });
+
+  if (!result.ok || !Array.isArray(result.json) || !result.json[0]) {
+    throw new Error(
+      `Khong the tao profile sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+
+  return normalizeStudentProfileRow(result.json[0]);
+}
+
+async function deleteStudentAuthUser(env, studentId) {
+  const result = await requestJson(
+    `${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(studentId)}`,
+    {
+      method: "DELETE",
+      headers: getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+    },
+  );
+
+  if (!result.ok) {
+    throw new Error(
+      `Khong the xoa tai khoan Auth cua sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+}
+
+async function updateStudentAuthUser(env, student, options = {}) {
+  const payload = {
+    email: student.email,
+    email_confirm: true,
+    user_metadata: buildStudentMetadata(student),
+  };
+
+  if (normalizeString(options.password || student.password)) {
+    payload.password = normalizeString(options.password || student.password);
+  }
+
+  const result = await requestJson(
+    `${env.SUPABASE_URL}/auth/v1/admin/users/${student.id}`,
+    {
+      method: "PUT",
+      headers: getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!result.ok) {
+    const message = isAlreadyExistsApiError(result.json)
+      ? "Email nay da ton tai trong Supabase Auth."
+      : `Khong the cap nhat auth user sinh vien: ${extractApiErrorMessage(result.json)}`;
+    const error = new Error(message);
+    error.statusCode = isAlreadyExistsApiError(result.json) ? 409 : 500;
+    throw error;
+  }
+}
+
+async function syncStudentProfile(env, student) {
+  const requestUrl = new URL("/rest/v1/profiles", env.SUPABASE_URL);
+  requestUrl.searchParams.set("id", `eq.${student.id}`);
+
+  const result = await requestJson(String(requestUrl), {
+    method: "PATCH",
+    headers: {
+      ...getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(buildStudentProfilePayload(student)),
+  });
+
+  if (!result.ok || !Array.isArray(result.json) || !result.json[0]) {
+    throw new Error(
+      `Khong the cap nhat profile sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+
+  return normalizeStudentProfileRow(result.json[0]);
+}
+
+async function syncStudentRegistrations(env, previousStudent, nextStudent) {
+  const previousStudentId = normalizeString(previousStudent?.studentId);
+
+  if (!previousStudentId) {
+    return;
+  }
+
+  const requestUrl = new URL("/rest/v1/registrations", env.SUPABASE_URL);
+  requestUrl.searchParams.set("student_id", `eq.${previousStudentId}`);
+
+  const result = await requestJson(String(requestUrl), {
+    method: "PATCH",
+    headers: {
+      ...getStudentHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      student_course: nextStudent.studentCourse,
+      student_gender: nextStudent.studentGender,
+      student_id: nextStudent.studentId,
+      student_name: nextStudent.studentName,
+    }),
+  });
+
+  if (!result.ok) {
+    throw new Error(
+      `Khong the dong bo lich su dang ky cua sinh vien: ${extractApiErrorMessage(result.json)}`,
+    );
+  }
+}
+
+async function listAdminStudents(request, response) {
+  try {
+    const { env } = await verifyAdminRequest(request);
+    const requestUrl = new URL(
+      request.url || "/api/admin/students",
+      `http://${request.headers.host || "localhost"}`,
+    );
+    const search = normalizeString(requestUrl.searchParams.get("search"));
+    const students = await fetchStudentProfiles(env, { search });
+
+    sendJson(response, 200, {
+      ok: true,
+      students,
+    });
+  } catch (error) {
+    console.error("Khong the tai danh sach sinh vien.", error);
+    sendJson(response, error.statusCode || 500, {
+      ok: false,
+      message: error.message || "Khong the tai danh sach sinh vien luc nay.",
+    });
+  }
+}
+
+async function createAdminStudent(request, response) {
+  let env = null;
+  let createdAuthUserId = "";
+
+  try {
+    ({ env } = await verifyAdminRequest(request));
+    const payload = await parseJsonBody(request);
+    const student = buildStudentInput(payload, env, {
+      mode: "create",
+    });
+
+    if (student.issues.length > 0) {
+      sendJson(response, 400, {
+        ok: false,
+        message: student.issues.join(" "),
+      });
+      return;
+    }
+
+    await ensureStudentFieldUnique(env, "email", student.email);
+    await ensureStudentFieldUnique(env, "login_id", student.loginId);
+    await ensureStudentFieldUnique(env, "student_id", student.studentId);
+
+    student.id = await createStudentAuthUser(env, student);
+    createdAuthUserId = student.id;
+    const createdStudent = await createStudentProfile(env, student);
+
+    sendJson(response, 201, {
+      ok: true,
+      message: "Tao tai khoan sinh vien thanh cong.",
+      student: createdStudent,
+    });
+  } catch (error) {
+    if (env && createdAuthUserId) {
+      try {
+        await deleteStudentAuthUser(env, createdAuthUserId);
+      } catch (cleanupError) {
+        console.error(
+          "Khong the rollback auth user sinh vien sau khi tao that bai.",
+          cleanupError,
+        );
+      }
+    }
+
+    console.error("Khong the tao sinh vien.", error);
+    sendJson(response, error.statusCode || 500, {
+      ok: false,
+      message: error.message || "Khong the tao tai khoan sinh vien luc nay.",
+    });
+  }
+}
+
+async function updateAdminStudent(request, response, studentId) {
+  try {
+    const { env } = await verifyAdminRequest(request);
+    const existingStudent = await getStudentProfileById(env, studentId);
+
+    if (!existingStudent) {
+      sendJson(response, 404, {
+        ok: false,
+        message: "Khong tim thay sinh vien can cap nhat.",
+      });
+      return;
+    }
+
+    const payload = await parseJsonBody(request);
+    const nextStudent = buildStudentInput(payload, env, {
+      currentStudent: existingStudent,
+      id: studentId,
+      mode: "update",
+    });
+
+    if (nextStudent.issues.length > 0) {
+      sendJson(response, 400, {
+        ok: false,
+        message: nextStudent.issues.join(" "),
+      });
+      return;
+    }
+
+    await ensureStudentFieldUnique(env, "email", nextStudent.email, studentId);
+    await ensureStudentFieldUnique(env, "login_id", nextStudent.loginId, studentId);
+    await ensureStudentFieldUnique(env, "student_id", nextStudent.studentId, studentId);
+
+    await updateStudentAuthUser(env, nextStudent, {
+      password: normalizeString(payload?.password),
+    });
+    await syncStudentRegistrations(env, existingStudent, nextStudent);
+    const updatedStudent = await syncStudentProfile(env, nextStudent);
+
+    sendJson(response, 200, {
+      ok: true,
+      message: "Cap nhat sinh vien thanh cong.",
+      student: updatedStudent,
+    });
+  } catch (error) {
+    console.error("Khong the cap nhat sinh vien.", error);
+    sendJson(response, error.statusCode || 500, {
+      ok: false,
+      message: error.message || "Khong the cap nhat sinh vien luc nay.",
+    });
+  }
+}
+
+async function deleteAdminStudent(request, response, studentId) {
+  try {
+    const { env } = await verifyAdminRequest(request);
+    const existingStudent = await getStudentProfileById(env, studentId);
+
+    if (!existingStudent) {
+      sendJson(response, 404, {
+        ok: false,
+        message: "Khong tim thay sinh vien can xoa.",
+      });
+      return;
+    }
+
+    await deleteStudentAuthUser(env, studentId);
+
+    sendJson(response, 200, {
+      ok: true,
+      message: "Da xoa tai khoan sinh vien. Lich su dang ky se duoc giu lai trong he thong.",
+      student: existingStudent,
+    });
+  } catch (error) {
+    console.error("Khong the xoa sinh vien.", error);
+    sendJson(response, error.statusCode || 500, {
+      ok: false,
+      message: error.message || "Khong the xoa sinh vien luc nay.",
+    });
   }
 }
 
@@ -425,6 +1033,40 @@ function createServer() {
     ) {
       handleAdminStudentImport(request, response);
       return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/api/admin/students") {
+      listAdminStudents(request, response);
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === "/api/admin/students") {
+      createAdminStudent(request, response);
+      return;
+    }
+
+    if (requestUrl.pathname.startsWith("/api/admin/students/")) {
+      const studentId = normalizeString(
+        decodeURIComponent(requestUrl.pathname.split("/").pop() || ""),
+      );
+
+      if (!studentId) {
+        sendJson(response, 400, {
+          ok: false,
+          message: "Thieu id sinh vien can thao tac.",
+        });
+        return;
+      }
+
+      if (request.method === "PUT") {
+        updateAdminStudent(request, response, studentId);
+        return;
+      }
+
+      if (request.method === "DELETE") {
+        deleteAdminStudent(request, response, studentId);
+        return;
+      }
     }
 
     const absolutePath = safeResolvePath(requestUrl.pathname);

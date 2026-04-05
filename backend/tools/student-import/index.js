@@ -1,7 +1,29 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const ExcelJS = require("exceljs");
 const { readEnv } = require("../../config/env-loader.cjs");
+
+let ExcelJS = null;
+
+function getExcelJs() {
+  if (ExcelJS) {
+    return ExcelJS;
+  }
+
+  try {
+    // Lazy-load so the backend can still start even if the import dependency
+    // has not been installed yet.
+    ExcelJS = require("exceljs");
+    return ExcelJS;
+  } catch (error) {
+    if (error?.code === "MODULE_NOT_FOUND") {
+      throw new Error(
+        "Chua cai dependency 'exceljs'. Hay chay 'cd backend && npm install' truoc khi dung tinh nang import Excel.",
+      );
+    }
+
+    throw error;
+  }
+}
 
 const HEADER_ALIASES = {
   studentId: [
@@ -176,7 +198,7 @@ async function loadWorksheet(filePath, sheetName = "") {
   }
 
   const extension = path.extname(resolvedPath).toLowerCase();
-  const workbook = new ExcelJS.Workbook();
+  const workbook = new (getExcelJs().Workbook)();
 
   if (extension === ".xlsx") {
     await workbook.xlsx.readFile(resolvedPath);
