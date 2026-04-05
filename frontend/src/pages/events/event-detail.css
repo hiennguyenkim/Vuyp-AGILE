@@ -1,0 +1,357 @@
+.detail-shell {
+  display: grid;
+}
+
+.detail-panel {
+  padding: 32px;
+  background:
+    radial-gradient(circle at top left, rgba(17, 79, 150, 0.1), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(195, 32, 57, 0.08), transparent 34%),
+    linear-gradient(145deg, #ffffff 0%, #f7fbff 44%, #fff8f9 100%);
+}
+
+.detail-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.detail-topbar-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-topbar-note {
+  color: var(--color-text-soft);
+  line-height: 1.7;
+  max-width: 720px;
+}
+
+.detail-back-link,
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--color-surface-tint);
+  border: 1px solid var(--color-border);
+  color: var(--color-brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.detail-back-link:hover,
+.back-link:hover {
+  background: #ddeaf8;
+}
+
+.detail-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.detail-spotlight {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.8fr);
+  gap: 20px;
+}
+
+.detail-spotlight-copy,
+.detail-side-card,
+.detail-content-card,
+.detail-support-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.detail-status-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.detail-spotlight-copy h1 {
+  margin-top: 8px;
+  font-size: clamp(34px, 4.6vw, 54px);
+  line-height: 1.04;
+  color: var(--color-brand-strong);
+}
+
+.detail-lead {
+  margin-top: 14px;
+  color: var(--color-text-soft);
+  line-height: 1.85;
+  font-size: 17px;
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.detail-metric-card {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.detail-metric-card span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-soft);
+}
+
+.detail-metric-card strong {
+  color: var(--color-brand-strong);
+  line-height: 1.6;
+}
+
+.detail-side-card {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  background: linear-gradient(180deg, #114f96 0%, #0c3d71 100%);
+  border-color: transparent;
+}
+
+.detail-code-label {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.detail-side-card .event-code-strong {
+  color: white;
+  font-size: 30px;
+}
+
+.detail-side-list {
+  display: grid;
+  gap: 14px;
+}
+
+.detail-side-list div {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.detail-side-list span {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.detail-side-list strong {
+  color: white;
+  line-height: 1.65;
+}
+
+.detail-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 18px;
+}
+
+.detail-content-card {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-content-card h2,
+.detail-support-card h2,
+.cta-copy strong {
+  font-size: clamp(26px, 3vw, 34px);
+  color: var(--color-brand-strong);
+}
+
+.detail-paragraph {
+  color: var(--color-text-soft);
+  line-height: 1.85;
+}
+
+.detail-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-feature-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+}
+
+.detail-feature-card span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-soft);
+}
+
+.detail-feature-card strong {
+  color: var(--color-brand-strong);
+  line-height: 1.5;
+}
+
+.detail-feature-card p {
+  color: var(--color-text-soft);
+  line-height: 1.7;
+}
+
+.detail-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.cta-panel {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #f5f9ff 0%, #fff4f5 100%);
+  border: 1px solid var(--color-border);
+}
+
+.cta-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.cta-copy span {
+  line-height: 1.75;
+  color: var(--color-text-soft);
+}
+
+.auth-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-chip-logged {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.auth-chip-guest {
+  background: var(--color-surface-tint);
+  color: var(--color-brand);
+}
+
+.register-btn {
+  width: 100%;
+}
+
+.register-btn-secondary {
+  background: var(--color-surface-tint);
+  color: var(--color-brand);
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+.register-btn-secondary:hover {
+  background: #ddeaf8;
+}
+
+.register-btn-disabled {
+  background: #d7dee7;
+  color: #617180;
+  box-shadow: none;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.detail-support-card {
+  display: grid;
+  gap: 14px;
+}
+
+.detail-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.detail-steps li {
+  display: grid;
+  gap: 4px;
+  color: var(--color-text-soft);
+  line-height: 1.75;
+}
+
+.detail-steps strong {
+  color: var(--color-brand-strong);
+}
+
+.error-message {
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--color-danger-soft);
+  color: var(--color-accent);
+  text-align: center;
+  line-height: 1.7;
+}
+
+.detail-backline {
+  text-align: center;
+}
+
+@media (max-width: 1080px) {
+  .detail-spotlight,
+  .detail-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .detail-panel,
+  .detail-spotlight-copy,
+  .detail-side-card,
+  .detail-content-card,
+  .detail-support-card,
+  .cta-panel {
+    padding: 20px;
+  }
+
+  .detail-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-back-link {
+    width: 100%;
+  }
+}

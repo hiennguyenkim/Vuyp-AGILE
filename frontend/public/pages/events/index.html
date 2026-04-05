@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sự kiện sinh viên HCMUE</title>
+    <link rel="stylesheet" href="../../../src/assets/css/base.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/components.css" />
+    <link rel="stylesheet" href="../../../src/pages/events/events.css" />
+  </head>
+  <body>
+    <main class="page-shell page-shell-wide events-shell">
+      <section class="surface-card events-hero">
+        <div class="events-topbar">
+          <div class="events-brand">
+            <img src="../../../src/assets/images/hcmue.png" alt="HCMUE" class="brand-logo" />
+            <div class="events-brand-copy">
+              <p class="section-eyebrow">Lịch sự kiện sinh viên HCMUE</p>
+              <span class="events-season-copy">Cập nhật hoạt động học thuật, kỹ năng và kết nối cộng đồng</span>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <span id="entryStatus" class="pill entry-status">Đang xem công khai</span>
+            <a id="entryActionLink" href="../auth/login.html" class="detail-btn">
+              Đăng nhập
+            </a>
+          </div>
+        </div>
+
+        <div class="events-hero-body">
+          <div class="events-copy">
+            <h1>Chọn sự kiện phù hợp với nhịp học tập và trải nghiệm sinh viên của bạn</h1>
+            <p class="events-subtitle">
+              Đây là khu vực công khai để bạn theo dõi toàn bộ các workshop,
+              talkshow, chuyên đề và hoạt động kết nối đang mở hoặc chuẩn bị diễn
+              ra. Chọn một chương trình để xem chi tiết và bắt đầu đăng ký.
+            </p>
+
+            <div class="events-hero-actions">
+              <a id="heroPrimaryAction" href="../auth/login.html" class="detail-btn">
+                Đăng nhập để đăng ký
+              </a>
+              <a href="#eventFeed" class="info-card-link">Khám phá lịch hoạt động</a>
+            </div>
+          </div>
+
+          <div class="events-highlight-panel">
+            <div class="events-highlight-grid">
+              <article class="highlight-metric">
+                <span>Tổng sự kiện công khai</span>
+                <strong id="totalEventsStat">--</strong>
+              </article>
+              <article class="highlight-metric">
+                <span>Đang diễn ra</span>
+                <strong id="liveEventsStat">--</strong>
+              </article>
+              <article class="highlight-metric highlight-metric-wide">
+                <span>Sự kiện gần nhất</span>
+                <strong id="nextEventStat">Đang cập nhật</strong>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface-card events-feed-panel" id="eventFeed">
+        <div class="events-section-heading">
+          <div>
+            <p class="section-eyebrow">Danh sách chương trình</p>
+            <h2>Sự kiện đang mở và sắp diễn ra</h2>
+          </div>
+          <p id="eventFeedMeta" class="event-feed-meta">
+            Thông tin đang được tải từ hệ thống sự kiện.
+          </p>
+        </div>
+
+        <div id="event-list" class="event-card-grid"></div>
+      </section>
+    </main>
+
+    <script src="../../../src/services/app-config.js"></script>
+    <script src="../../../src/utils/utils.js"></script>
+    <script type="module" src="../../../src/pages/events/events.js"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+zero_sha="0000000000000000000000000000000000000000"
+changed_files=""
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  [ "${local_sha}" = "${zero_sha}" ] && continue
+
+  if [ "${remote_sha}" = "${zero_sha}" ]; then
+    commit_list="$(git rev-list "${local_sha}" --not --remotes || true)"
+  else
+    commit_list="$(git rev-list "${remote_sha}..${local_sha}" || true)"
+  fi
+
+  for commit in ${commit_list}; do
+    commit_files="$(git diff-tree --no-commit-id --name-only -r "${commit}" -- || true)"
+    if [ -n "${commit_files}" ]; then
+      changed_files="${changed_files}
+${commit_files}"
+    fi
+  done
+done
+
+blocked_files="$(
+  printf "%s\n" "${changed_files}" \
+    | grep -E '(^|/)\.env([.].*)?$|(^|/)body\.json$' \
+    | grep -v -E '(^|/)\.env\.(example|sample|template)$' \
+    | sort -u \
+    || true
+)"
+
+if [ -n "${blocked_files}" ]; then
+  echo "Push bi chan vi lich su commit sap day len co file nhay cam:"
+  echo "${blocked_files}"
+  echo "Hay xoa file khoi commit va chi giu cau hinh mau trong .env.example."
+  exit 1
+fi
+

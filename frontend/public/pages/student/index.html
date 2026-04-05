@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khu vực sinh viên - HCMUE Events</title>
+  <link rel="stylesheet" href="../../../src/assets/css/base.css" />
+  <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
+  <link rel="stylesheet" href="../../../src/assets/css/components.css" />
+  <link rel="stylesheet" href="../../../src/pages/student/student.css" />
+</head>
+
+<body>
+  <header class="header">
+    <div class="logo-area">
+      <img src="../../../src/assets/images/hcmue.png" class="logo" alt="HCMUE" />
+    </div>
+
+    <button id="menuBtn" type="button">☰</button>
+
+    <div class="title">HỆ THỐNG SỰ KIỆN SINH VIÊN HCMUE</div>
+
+    <div class="header-auth">
+      <div class="header-auth-copy">
+        <strong id="authGreeting">Khách đang xem sự kiện</strong>
+        <span id="authSubline">Đăng nhập để đăng ký và xem lịch sử cá nhân.</span>
+      </div>
+
+      <div class="header-auth-actions">
+        <button id="homeShortcutBtn" type="button" class="header-auth-btn">
+          Trang chủ
+        </button>
+
+        <button id="logoutBtn" type="button" class="header-auth-btn header-auth-btn-secondary">
+          Đăng xuất
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar" id="sidebar">
+      <div class="student-box" onclick="toggleStudentMenu()">
+        <div class="student-left">
+          <span class="student-icon">👤</span>
+          Sinh viên
+        </div>
+
+        <div class="arrow">▲</div>
+      </div>
+
+      <div id="studentMenu">
+        <div class="menu-item active" onclick="showEvents()">Danh sách sự kiện</div>
+        <div class="menu-item" onclick="showProfile()">Trang cá nhân</div>
+        <div class="menu-item" onclick="showHistory()">Lịch sử đăng ký</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section id="eventList" class="content-panel">
+        <div class="section-headline">
+          <div>
+            <p class="section-eyebrow">Không gian sinh viên</p>
+            <a class="section-title-link" href="../events/index.html">
+              Danh sách sự kiện
+            </a>
+          </div>
+        </div>
+
+        <div class="search-box">
+          <input id="search" placeholder="Tìm theo tên, mã, diễn giả hoặc địa điểm" />
+          <button type="button" onclick="renderEvents()">Tìm kiếm</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table student-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>TÊN SỰ KIỆN</th>
+                <th>MÃ SỰ KIỆN</th>
+                <th>THỜI GIAN</th>
+                <th>ĐỊA ĐIỂM</th>
+                <th>SỐ LƯỢNG</th>
+                <th>TRẠNG THÁI</th>
+                <th>HÀNH ĐỘNG</th>
+              </tr>
+            </thead>
+            <tbody id="eventTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="profile" class="content-panel" style="display: none">
+        <section class="auth-card" id="authCard">
+          <div class="auth-copy">
+            <p class="section-eyebrow">Trang cá nhân sinh viên</p>
+            <h2 id="authCardTitle">Khu vực sinh viên</h2>
+            <p id="authCardDescription" class="auth-description">
+              Thông tin tài khoản sẽ được dùng để đăng ký sự kiện và tạo QR check-in cá nhân.
+            </p>
+            <div id="pendingRegisterNotice" class="auth-inline-note" hidden></div>
+          </div>
+
+          <div id="accountPanel" class="account-panel">
+            <div class="account-grid">
+              <div class="account-item">
+                <span>Họ tên</span>
+                <strong id="accountName"></strong>
+              </div>
+
+              <div class="account-item">
+                <span>MSSV</span>
+                <strong id="accountStudentId"></strong>
+              </div>
+
+              <div class="account-item">
+                <span>Khóa</span>
+                <strong id="accountCourse"></strong>
+              </div>
+
+              <div class="account-item">
+                <span>Giới tính</span>
+                <strong id="accountGender"></strong>
+              </div>
+            </div>
+
+            <p class="account-note" id="accountNote">
+              Thông tin từ tài khoản này sẽ được dùng khi đăng ký sự kiện.
+            </p>
+          </div>
+
+          <section class="student-qr-card">
+            <div class="student-qr-copy">
+              <p class="section-eyebrow">QR sinh viên</p>
+              <h3>Mã QR cá nhân theo MSSV</h3>
+              <p>
+                Mã QR này đại diện cho tài khoản sinh viên hiện tại và được dùng để quản trị viên điểm danh khi tham gia sự kiện.
+              </p>
+            </div>
+
+            <div class="student-qr-shell">
+              <iframe id="studentQrFrame" class="student-qr-frame" title="QR sinh viên"></iframe>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="history" class="content-panel" style="display: none">
+        <div class="section-headline">
+          <div>
+            <p class="section-eyebrow">Theo dõi cá nhân</p>
+            <h2>Lịch sử đăng ký</h2>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table history-table">
+            <thead>
+              <tr>
+                <th>Mã sự kiện</th>
+                <th>Tên sự kiện</th>
+                <th>Thời gian sự kiện</th>
+                <th>Địa điểm</th>
+                <th>Họ tên</th>
+                <th>MSSV</th>
+                <th>Thời gian đăng ký</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+
+            <tbody id="historyList"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="detailModal" class="modal">
+    <div class="modal-box">
+      <span class="close" onclick="closeModal()">✕</span>
+
+      <h2 id="detailName"></h2>
+
+      <div class="event-desc" id="detailDesc"></div>
+
+      <div class="event-row">
+        <label>Mã sự kiện:</label>
+        <span id="detailCode"></span>
+      </div>
+
+      <div class="event-row">
+        <label>Diễn giả:</label>
+        <span id="detailSpeaker"></span>
+      </div>
+
+      <div class="event-row">
+        <label>Thời gian:</label>
+        <span id="detailTime"></span>
+      </div>
+
+      <div class="event-row">
+        <label>Địa điểm:</label>
+        <span id="detailLocation"></span>
+      </div>
+
+      <div class="event-row slots">
+        <label>Số lượng:</label>
+        <span id="detailMax"></span>
+      </div>
+
+      <div class="event-row">
+        <label>Trạng thái:</label>
+        <span id="detailStatus"></span>
+      </div>
+
+      <button class="register-btn" type="button" onclick="openRegister()">
+        Đăng ký tham gia
+      </button>
+    </div>
+  </div>
+
+  <div id="registerModal" class="modal">
+    <div class="modal-box">
+      <span class="close" onclick="closeRegister()">✕</span>
+
+      <h2>Đăng ký sự kiện</h2>
+
+      <p id="registerTargetEvent" class="register-target"></p>
+      <p id="registerAuthNote" class="register-auth-note">
+        Thông tin đăng ký sẽ được lấy từ tài khoản đang đăng nhập.
+      </p>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label>Họ tên <span class="required">*</span></label>
+          <input type="text" id="studentName" required />
+          <div id="studentNameError" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label>MSSV <span class="required">*</span></label>
+          <input type="text" id="studentId" required />
+          <div id="studentIdError" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Khóa <span class="required">*</span></label>
+          <input type="text" id="studentCourse" required />
+          <div id="studentCourseError" class="field-error"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Giới tính <span class="required">*</span></label>
+          <select id="studentGender" required>
+            <option value="">Chọn giới tính</option>
+            <option>Nam</option>
+            <option>Nữ</option>
+            <option>Khác</option>
+          </select>
+          <div id="studentGenderError" class="field-error"></div>
+        </div>
+
+        <p id="error" class="error"></p>
+
+        <button type="submit" class="submit-btn">Đăng ký</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast student-toast"></div>
+  <script src="../../../src/services/app-config.js"></script>
+  <script src="../../../src/utils/utils.js"></script>
+  <script type="module" src="../../../src/pages/student/student.js"></script>
+</body>
+
+</html>

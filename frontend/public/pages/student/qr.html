@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR sinh viên - HCMUE Events</title>
+    <link rel="stylesheet" href="../../../src/assets/css/base.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/components.css" />
+    <link rel="stylesheet" href="../../../src/pages/student/qr.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body>
+    <main class="page-shell qr-shell">
+      <section class="surface-card qr-card">
+        <div class="qr-brand">
+          <div class="qr-brand-copy">
+            <h1>QR sinh viên</h1>
+            <div class="subtitle">Dùng cho check-in sự kiện tại Trường Đại học Sư phạm TP.HCM</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="mssvInput">Mã số sinh viên</label>
+          <input type="text" id="mssvInput" placeholder="Nhập MSSV để tạo QR check-in..." autocomplete="off" />
+        </div>
+
+        <button id="generateQrButton" type="button">Tạo QR check-in</button>
+
+        <div class="qr-container" id="qrContainer">
+          <div id="qrcode"></div>
+        </div>
+
+        <div id="qrMeta" class="qr-meta" style="display: none"></div>
+
+        <div class="footer-note">Quản trị viên sẽ quét mã này để xác thực sinh viên khi tham gia sự kiện.</div>
+      </section>
+    </main>
+
+    <script src="../../../src/services/app-config.js"></script>
+    <script type="module" src="../../../src/pages/student/qr.js"></script>
+  </body>
+</html>

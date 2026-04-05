@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+blocked_files="$(
+  git diff --cached --name-only --diff-filter=ACMR -- \
+    | grep -E '(^|/)\.env([.].*)?$|(^|/)body\.json$' \
+    | grep -v -E '(^|/)\.env\.(example|sample|template)$' \
+    || true
+)"
+
+if [ -n "$blocked_files" ]; then
+  echo "Commit bi chan vi dang chua file nhay cam:"
+  echo "$blocked_files"
+  echo "Hay giu file env o local va dung .env.example de chia se cau hinh mau."
+  exit 1
+fi
+

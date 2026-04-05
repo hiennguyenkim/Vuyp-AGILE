@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách đăng ký sự kiện | Quản trị viên</title>
+    <link rel="stylesheet" href="../../../src/assets/css/base.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
+    <link rel="stylesheet" href="../../../src/assets/css/components.css" />
+    <link rel="stylesheet" href="../../../src/pages/admin/event-registrations.css" />
+  </head>
+  <body>
+    <main class="page-shell page-shell-wide registrations-shell">
+      <header class="surface-card registrations-topbar">
+        <div class="registrations-topbar-copy">
+          <div class="registrations-topbar-meta">
+            <button type="button" id="backToAdminBtn" class="secondary-btn topbar-btn">
+              Quay lại quản trị
+            </button>
+            <span class="section-eyebrow">Phân hệ quản trị HCMUE</span>
+          </div>
+
+          <h1>Danh sách đăng ký và điểm danh theo sự kiện</h1>
+          <span class="registrations-topbar-note">
+            Mỗi trang chỉ tập trung vào một sự kiện để admin dễ rà soát danh sách sinh viên và trạng thái check-in.
+          </span>
+        </div>
+
+        <div class="admin-session-summary">
+          <strong id="adminName">Quản trị viên</strong>
+          <span id="adminRole">Đang xác thực tài khoản</span>
+        </div>
+      </header>
+
+      <section id="eventSummaryCard" class="surface-card event-summary-card" hidden>
+        <div class="event-summary-heading">
+          <div>
+            <p class="section-eyebrow">Sự kiện đang xem</p>
+            <h2 id="summaryName">Đang tải thông tin sự kiện</h2>
+          </div>
+
+          <span id="summaryCode" class="event-code-pill">--</span>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <label>Thời gian</label>
+            <span id="summaryTime">--</span>
+          </div>
+
+          <div class="summary-item">
+            <label>Địa điểm</label>
+            <span id="summaryLocation">--</span>
+          </div>
+
+          <div class="summary-item">
+            <label>Diễn giả</label>
+            <span id="summarySpeaker">--</span>
+          </div>
+
+          <div class="summary-item">
+            <label>Sức chứa</label>
+            <span id="summaryCapacity">--</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="surface-card stat-card">
+          <span id="registrationCount">0</span>
+          <small>Lượt đăng ký</small>
+        </div>
+
+        <div class="surface-card stat-card">
+          <span id="checkedInCount">0</span>
+          <small>Đã điểm danh</small>
+        </div>
+
+        <div class="surface-card stat-card">
+          <span id="pendingCount">0</span>
+          <small>Chưa điểm danh</small>
+        </div>
+      </section>
+
+      <section class="surface-card registration-table-section">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Dữ liệu sinh viên</p>
+            <h2>Danh sách đăng ký và điểm danh</h2>
+          </div>
+
+          <p id="tableMeta" class="table-meta">
+            Đang tải dữ liệu đăng ký từ hệ thống sự kiện.
+          </p>
+        </div>
+
+        <div id="pageError" class="error"></div>
+
+        <div class="table-wrap">
+          <table class="data-table admin-table">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>MSSV</th>
+                <th>Khóa</th>
+                <th>Giới tính</th>
+                <th>Đăng ký lúc</th>
+                <th>Trạng thái</th>
+                <th>Điểm danh lúc</th>
+              </tr>
+            </thead>
+
+            <tbody id="registrationList">
+              <tr>
+                <td colspan="7">Đang tải dữ liệu đăng ký và điểm danh.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="../../../src/services/app-config.js"></script>
+    <script src="../../../src/utils/utils.js"></script>
+    <script type="module" src="../../../src/pages/admin/event-registrations.js"></script>
+  </body>
+</html>

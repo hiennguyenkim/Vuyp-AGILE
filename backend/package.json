@@ -1,0 +1,12 @@
+{
+  "name": "vuyp-agile-backend",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "import:students": "node tools/student-import/cli.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

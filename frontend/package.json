@@ -1,0 +1,7 @@
+{
+  "name": "vuyp-agile-frontend",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,223 @@
+.registrations-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.registrations-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 28px;
+  flex-wrap: wrap;
+}
+
+.registrations-topbar-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.registrations-topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.registrations-topbar h1 {
+  font-size: clamp(30px, 4vw, 42px);
+}
+
+.registrations-topbar-note {
+  color: var(--color-text-soft);
+  line-height: 1.7;
+  max-width: 720px;
+}
+
+.topbar-btn {
+  min-width: 160px;
+}
+
+.admin-session-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.admin-session-summary strong {
+  color: var(--color-brand-strong);
+}
+
+.admin-session-summary span {
+  color: var(--color-text-soft);
+}
+
+.event-summary-card,
+.registration-table-section {
+  padding: 28px;
+}
+
+.event-summary-card {
+  display: grid;
+  gap: 22px;
+}
+
+.event-summary-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.event-summary-heading h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  color: var(--color-brand-strong);
+}
+
+.event-code-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--color-surface-tint);
+  color: var(--color-brand);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary-grid,
+.stats-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.summary-item label {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.summary-item span {
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-card {
+  padding: 22px;
+  text-align: center;
+  background: linear-gradient(135deg, #ffffff 0%, #eef5fb 100%);
+}
+
+.stat-card span {
+  display: block;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--color-brand-strong);
+}
+
+.stat-card small {
+  color: var(--color-text-soft);
+  font-size: 15px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.table-meta {
+  color: var(--color-text-soft);
+  line-height: 1.7;
+  max-width: 460px;
+}
+
+.admin-table td:last-child {
+  white-space: nowrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.status-pill-checked {
+  background: rgba(49, 153, 87, 0.14);
+  color: #1f7c45;
+}
+
+.status-pill-pending {
+  background: rgba(17, 79, 150, 0.12);
+  color: var(--color-brand-strong);
+}
+
+.error {
+  min-height: 22px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+@media (max-width: 960px) {
+  .summary-grid,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .registrations-topbar,
+  .event-summary-card,
+  .registration-table-section {
+    padding: 20px;
+  }
+
+  .registrations-topbar-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar-btn {
+    width: 100%;
+  }
+}
