@@ -75,6 +75,7 @@ Vuyp-AGILE/
   `mssv`, `name`, `gender`, `course`, `email`, `password`, `login_id`, `role`
 - Neu file khong co cot `email`, tool se tu tao email theo `SETUP_DEFAULT_EMAIL_DOMAIN` hoac `SUPABASE_AUTH_IDENTITY_DOMAIN` trong `.env`.
 - Neu file khong co cot `password`, tool se dung `SETUP_DEFAULT_PASSWORD` trong `.env`.
+- Neu dong import co `role=admin` va khong co cot `password`, tool uu tien `SETUP_DEFAULT_ADMIN_PASSWORD`; neu bien nay khong co thi moi fallback ve `SETUP_DEFAULT_PASSWORD`.
 
 ## Bao mat cau hinh
 

@@ -98,14 +98,20 @@ function normalizeGender(value) {
 }
 
 function buildDefaultConfig(env, overrides = {}) {
+  const defaultPassword =
+    normalizeString(overrides.defaultPassword) ||
+    normalizeString(env.SETUP_DEFAULT_PASSWORD);
+
   return {
     defaultEmailDomain:
       normalizeString(overrides.defaultEmailDomain) ||
       normalizeString(env.SETUP_DEFAULT_EMAIL_DOMAIN) ||
       normalizeString(env.SUPABASE_AUTH_IDENTITY_DOMAIN),
-    defaultPassword:
-      normalizeString(overrides.defaultPassword) ||
-      normalizeString(env.SETUP_DEFAULT_PASSWORD),
+    defaultPassword,
+    defaultAdminPassword:
+      normalizeString(overrides.defaultAdminPassword) ||
+      normalizeString(env.SETUP_DEFAULT_ADMIN_PASSWORD) ||
+      defaultPassword,
     keepPassword: Boolean(overrides.keepPassword),
     limit: Number.isFinite(Number(overrides.limit))
       ? Math.max(1, Number(overrides.limit))
@@ -266,6 +272,19 @@ function resolveEmail(loginId, explicitEmail, defaultEmailDomain) {
   return `${normalizedLoginId}@${normalizedDomain}`;
 }
 
+function resolveDefaultPassword(role, defaults) {
+  return role === "admin"
+    ? normalizeString(defaults.defaultAdminPassword) ||
+        normalizeString(defaults.defaultPassword)
+    : normalizeString(defaults.defaultPassword);
+}
+
+function getMissingPasswordHint(role) {
+  return role === "admin"
+    ? "SETUP_DEFAULT_ADMIN_PASSWORD hoac SETUP_DEFAULT_PASSWORD"
+    : "SETUP_DEFAULT_PASSWORD";
+}
+
 function normalizeSpreadsheetRow(rawRow, defaults) {
   const studentId =
     getFieldValue(rawRow, "studentId") ||
@@ -288,7 +307,8 @@ function normalizeSpreadsheetRow(rawRow, defaults) {
     getFieldValue(rawRow, "email"),
     defaults.defaultEmailDomain,
   );
-  const password = getFieldValue(rawRow, "password") || defaults.defaultPassword;
+  const password =
+    getFieldValue(rawRow, "password") || resolveDefaultPassword(role, defaults);
 
   return {
     rowNumber: rawRow.__rowNumber,
@@ -354,7 +374,7 @@ function validatePreparedRecords(records, defaults) {
 
     if (!record.password && !defaults.keepPassword) {
       issues.push(
-        `Dong ${record.rowNumber}: thieu password va cung khong co SETUP_DEFAULT_PASSWORD.`,
+        `Dong ${record.rowNumber}: thieu password va cung khong co ${getMissingPasswordHint(record.role)}.`,
       );
     }
   });
