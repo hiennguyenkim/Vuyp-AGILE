@@ -28,13 +28,8 @@
       </div>
 
       <div class="header-auth-actions">
-        <button id="homeShortcutBtn" type="button" class="header-auth-btn">
-          Trang chủ
-        </button>
-
-        <button id="logoutBtn" type="button" class="header-auth-btn header-auth-btn-secondary">
-          Đăng xuất
-        </button>
+        <button id="homeShortcutBtn" type="button" class="header-auth-btn">Trang chủ</button>
+        <button id="logoutBtn" type="button" class="header-auth-btn header-auth-btn-secondary">Đăng xuất</button>
       </div>
     </div>
   </header>
@@ -46,25 +41,24 @@
           <span class="student-icon">👤</span>
           Sinh viên
         </div>
-
         <div class="arrow">▲</div>
       </div>
 
       <div id="studentMenu">
-        <div class="menu-item active" onclick="showEvents()">Danh sách sự kiện</div>
-        <div class="menu-item" onclick="showProfile()">Trang cá nhân</div>
-        <div class="menu-item" onclick="showHistory()">Lịch sử đăng ký</div>
+        <div class="menu-item active" id="menuEvents"  onclick="showEvents()">Danh sách sự kiện</div>
+        <div class="menu-item"        id="menuProfile"  onclick="showProfile()">Trang cá nhân</div>
+        <div class="menu-item"        id="menuHistory"  onclick="showHistory()">Lịch sử đăng ký</div>
+        <div class="menu-item"        id="menuFeedback" onclick="showFeedback()">Đánh giá sự kiện</div>
       </div>
     </aside>
 
     <main class="content">
+
       <section id="eventList" class="content-panel">
         <div class="section-headline">
           <div>
             <p class="section-eyebrow">Không gian sinh viên</p>
-            <a class="section-title-link" href="../events/index.html">
-              Danh sách sự kiện
-            </a>
+            <a class="section-title-link" href="../events/index.html">Danh sách sự kiện</a>
           </div>
         </div>
 
@@ -92,7 +86,7 @@
         </div>
       </section>
 
-      <section id="profile" class="content-panel" style="display: none">
+      <section id="profile" class="content-panel" style="display:none">
         <section class="auth-card" id="authCard">
           <div class="auth-copy">
             <p class="section-eyebrow">Trang cá nhân sinh viên</p>
@@ -105,39 +99,19 @@
 
           <div id="accountPanel" class="account-panel">
             <div class="account-grid">
-              <div class="account-item">
-                <span>Họ tên</span>
-                <strong id="accountName"></strong>
-              </div>
-
-              <div class="account-item">
-                <span>MSSV</span>
-                <strong id="accountStudentId"></strong>
-              </div>
-
-              <div class="account-item">
-                <span>Khóa</span>
-                <strong id="accountCourse"></strong>
-              </div>
-
-              <div class="account-item">
-                <span>Giới tính</span>
-                <strong id="accountGender"></strong>
-              </div>
+              <div class="account-item"><span>Họ tên</span><strong id="accountName"></strong></div>
+              <div class="account-item"><span>MSSV</span><strong id="accountStudentId"></strong></div>
+              <div class="account-item"><span>Khóa</span><strong id="accountCourse"></strong></div>
+              <div class="account-item"><span>Giới tính</span><strong id="accountGender"></strong></div>
             </div>
-
-            <p class="account-note" id="accountNote">
-              Thông tin từ tài khoản này sẽ được dùng khi đăng ký sự kiện.
-            </p>
+            <p class="account-note" id="accountNote">Thông tin từ tài khoản này sẽ được dùng khi đăng ký sự kiện.</p>
           </div>
 
           <section class="student-qr-card">
             <div class="student-qr-copy">
               <p class="section-eyebrow">QR sinh viên</p>
               <h3>Mã QR cá nhân theo MSSV</h3>
-              <p>
-                Mã QR này đại diện cho tài khoản sinh viên hiện tại và được dùng để quản trị viên điểm danh khi tham gia sự kiện.
-              </p>
+              <p>Mã QR này đại diện cho tài khoản sinh viên hiện tại và được dùng để quản trị viên điểm danh khi tham gia sự kiện.</p>
             </div>
 
             <div class="student-qr-shell">
@@ -147,7 +121,7 @@
         </section>
       </section>
 
-      <section id="history" class="content-panel" style="display: none">
+      <section id="history" class="content-panel" style="display:none">
         <div class="section-headline">
           <div>
             <p class="section-eyebrow">Theo dõi cá nhân</p>
@@ -174,6 +148,43 @@
           </table>
         </div>
       </section>
+
+      <section id="feedback" class="content-panel" style="display:none">
+
+        <div class="feedback-hero">
+          <div class="feedback-hero-info">
+            <h2 id="fbEventName">Chọn sự kiện để xem đánh giá</h2>
+            <p id="fbEventMeta">📍 — &nbsp;&nbsp; 📅 —</p>
+          </div>
+        </div>
+
+        <div class="feedback-select-bar">
+          <label for="fbEventSelect">Sự kiện:</label>
+          <select id="fbEventSelect" onchange="onFbEventChange()">
+            <option value="">-- Chọn sự kiện --</option>
+            <!-- Populated dynamically by initFbData() in student.js -->
+          </select>
+        </div>
+
+        <div class="rating-summary" id="fbRatingSummary" style="display:none">
+          <div class="rating-big">
+            <div class="score" id="fbAvgScore">0.0</div>
+            <div class="stars-display" id="fbAvgStars">☆☆☆☆☆</div>
+            <div class="count" id="fbReviewCount">0 đánh giá</div>
+          </div>
+          <div class="rating-bars" id="fbRatingBars"></div>
+        </div>
+
+        <div class="feedback-top-bar" id="fbTopBar" style="display:none">
+          <h3>Đánh giá từ sinh viên</h3>
+          <button class="fb-write-btn" onclick="openFbModal()">✏️ Viết đánh giá</button>
+        </div>
+
+        <div id="fbReviewList">
+          <div class="no-reviews">Vui lòng chọn một sự kiện để xem đánh giá.</div>
+        </div>
+
+      </section>
     </main>
   </div>
 
@@ -182,42 +193,15 @@
       <span class="close" onclick="closeModal()">✕</span>
 
       <h2 id="detailName"></h2>
-
+      
       <div class="event-desc" id="detailDesc"></div>
-
-      <div class="event-row">
-        <label>Mã sự kiện:</label>
-        <span id="detailCode"></span>
-      </div>
-
-      <div class="event-row">
-        <label>Diễn giả:</label>
-        <span id="detailSpeaker"></span>
-      </div>
-
-      <div class="event-row">
-        <label>Thời gian:</label>
-        <span id="detailTime"></span>
-      </div>
-
-      <div class="event-row">
-        <label>Địa điểm:</label>
-        <span id="detailLocation"></span>
-      </div>
-
-      <div class="event-row slots">
-        <label>Số lượng:</label>
-        <span id="detailMax"></span>
-      </div>
-
-      <div class="event-row">
-        <label>Trạng thái:</label>
-        <span id="detailStatus"></span>
-      </div>
-
-      <button class="register-btn" type="button" onclick="openRegister()">
-        Đăng ký tham gia
-      </button>
+      <div class="event-row"><label>Mã sự kiện:</label><span id="detailCode"></span></div>
+      <div class="event-row"><label>Diễn giả:</label><span id="detailSpeaker"></span></div>
+      <div class="event-row"><label>Thời gian:</label><span id="detailTime"></span></div>
+      <div class="event-row"><label>Địa điểm:</label><span id="detailLocation"></span></div>
+      <div class="event-row slots"><label>Số lượng:</label><span id="detailMax"></span></div>
+      <div class="event-row"><label>Trạng thái:</label><span id="detailStatus"></span></div>
+      <button class="register-btn" type="button" onclick="openRegister()">Đăng ký tham gia</button>
     </div>
   </div>
 
@@ -228,9 +212,7 @@
       <h2>Đăng ký sự kiện</h2>
 
       <p id="registerTargetEvent" class="register-target"></p>
-      <p id="registerAuthNote" class="register-auth-note">
-        Thông tin đăng ký sẽ được lấy từ tài khoản đang đăng nhập.
-      </p>
+      <p id="registerAuthNote" class="register-auth-note">Thông tin đăng ký sẽ được lấy từ tài khoản đang đăng nhập.</p>
 
       <form id="registerForm" novalidate>
         <div class="form-group">
@@ -269,10 +251,46 @@
     </div>
   </div>
 
+  <div id="feedbackModal">
+    <div class="fb-modal-box">
+      <span class="fb-close" onclick="closeFbModal()">×</span>
+      <h3>Gửi đánh giá</h3>
+      <p id="fbModalEventName" style="font-size:0.88rem;color:#555;margin:-8px 0 14px;"></p>
+
+      <div class="form-group">
+        <label>Số sao <span class="required">*</span></label>
+        <div class="star-input">
+          <input type="radio" id="star5" name="fbRating" value="5"><label for="star5">★</label>
+          <input type="radio" id="star4" name="fbRating" value="4"><label for="star4">★</label>
+          <input type="radio" id="star3" name="fbRating" value="3"><label for="star3">★</label>
+          <input type="radio" id="star2" name="fbRating" value="2"><label for="star2">★</label>
+          <input type="radio" id="star1" name="fbRating" value="1"><label for="star1">★</label>
+        </div>
+        <div id="fbStarError" class="fb-error" style="display:none">Vui lòng chọn số sao!</div>
+      </div>
+
+      <div class="form-group">
+        <label>Góp ý</label>
+        <textarea id="fbContent" rows="4" placeholder="Nhập góp ý của bạn ..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Ảnh đính kèm</label>
+        <label class="fb-file-label" for="fbFileInput">📎 Chọn ảnh</label>
+        <input type="file" id="fbFileInput" accept="image/*" onchange="onFbFileChange()" />
+        <div id="fbFileName">Chưa chọn ảnh</div>
+      </div>
+
+      <button class="fb-submit-btn" onclick="submitFbReview()">Gửi đánh giá</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast student-toast"></div>
+
   <script src="../../../src/services/app-config.js"></script>
   <script src="../../../src/utils/utils.js"></script>
   <script type="module" src="../../../src/pages/student/student.js"></script>
+
 </body>
 
 </html>

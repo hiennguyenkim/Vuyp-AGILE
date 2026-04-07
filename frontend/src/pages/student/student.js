@@ -31,6 +31,42 @@ const registerFieldErrors = {
   studentGender: document.getElementById("studentGenderError"),
 };
 
+const fbData = {};
+let currentFbEventId = null;
+
+function initFbData() {
+  events.forEach((event) => {
+    if (!fbData[event.id]) {
+      fbData[event.id] = {
+        name: event.name,
+        location: event.location,
+        date: window.ClubStorage.formatDateRange(event.start, event.end),
+        reviews: [],
+      };
+    }
+  });
+
+  const sel = document.getElementById("fbEventSelect");
+  if (!sel) return;
+
+  const previousValue = sel.value;
+
+  sel.innerHTML = '<option value="">-- Chọn sự kiện --</option>';
+  events.forEach((event) => {
+    const opt = document.createElement("option");
+    opt.value = event.id;
+    opt.textContent = `${event.name} | ${window.ClubStorage.formatDateRange(event.start, event.end)}`;
+    sel.appendChild(opt);
+  });
+
+  if (previousValue && fbData[previousValue]) {
+    sel.value = previousValue;
+  }
+}
+
+// ============================================================
+// URL / AUTH HELPERS
+// ============================================================
 function getPageContextFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return {
@@ -50,19 +86,9 @@ function buildHomeRedirectUrl() {
   const context = getPageContextFromUrl();
   const params = new URLSearchParams();
   params.set("next", "student");
-
-  if (context.eventId) {
-    params.set("eventId", context.eventId);
-  }
-
-  if (context.action) {
-    params.set("action", context.action);
-  }
-
-  if (context.view) {
-    params.set("view", context.view);
-  }
-
+  if (context.eventId) params.set("eventId", context.eventId);
+  if (context.action)  params.set("action",  context.action);
+  if (context.view)    params.set("view",     context.view);
   return `../auth/login.html?${params.toString()}`;
 }
 
@@ -102,10 +128,7 @@ function getStudentQrUrl() {
 }
 
 async function loadState() {
-  if (!(await ensureStudentAccess())) {
-    return false;
-  }
-
+  if (!(await ensureStudentAccess())) return false;
   const [loadedEvents, loadedHistory] = await Promise.all([
     window.ClubStorage.getUpcomingEvents(),
     window.ClubStorage.getHistoryEntries(currentUser.studentId),
@@ -120,10 +143,7 @@ function getEventById(eventId) {
 }
 
 function upsertEvent(event) {
-  if (!event) {
-    return;
-  }
-
+  if (!event) return;
   const index = events.findIndex((item) => item.id === event.id);
   if (index === -1) {
     events = window.ClubStorage.sortEvents([...events, event]);
@@ -159,7 +179,10 @@ function renderAuthPanel() {
 }
 
 function renderStudentQr() {
-  studentQrFrame.src = getStudentQrUrl();
+  const newSrc = getStudentQrUrl();
+  if (studentQrFrame.src !== newSrc) {
+    studentQrFrame.src = newSrc;
+  }
 }
 
 function syncRegisterFormWithSession() {
@@ -176,12 +199,12 @@ function syncRegisterFormWithSession() {
 
 function renderEvents() {
   const search = document.getElementById("search")?.value.toLowerCase() || "";
-  const filteredEvents = events.filter((event) => {
-    return [event.name, event.code, event.location, event.speaker]
+  const filteredEvents = events.filter((event) =>
+    [event.name, event.code, event.location, event.speaker]
       .join(" ")
       .toLowerCase()
-      .includes(search);
-  });
+      .includes(search),
+  );
 
   const html = filteredEvents
     .map((event, index) => {
@@ -212,9 +235,7 @@ function renderEvents() {
             </span>
           </td>
           <td>
-            <a class="action-btn" href="../events/detail.html?id=${encodeURIComponent(
-              event.id,
-            )}">
+            <a class="action-btn" href="../events/detail.html?id=${encodeURIComponent(event.id)}">
               ${escapeHtml(actionLabel)}
             </a>
           </td>
@@ -225,11 +246,7 @@ function renderEvents() {
 
   document.getElementById("eventTable").innerHTML =
     html ||
-    `
-      <tr>
-        <td colspan="8">Hiện chưa có sự kiện đang mở hoặc sắp diễn ra phù hợp.</td>
-      </tr>
-    `;
+    `<tr><td colspan="8">Hiện chưa có sự kiện đang mở hoặc sắp diễn ra phù hợp.</td></tr>`;
 }
 
 function openEventDetail(eventId) {
@@ -244,9 +261,7 @@ function handleEventRowKeydown(event, eventId) {
 }
 
 async function showDetail(eventId) {
-  if (!(await ensureStudentAccess())) {
-    return;
-  }
+  if (!(await ensureStudentAccess())) return;
 
   const event = await window.ClubStorage.getEventById(eventId);
 
@@ -267,12 +282,8 @@ async function showDetail(eventId) {
   document.getElementById("detailName").innerText = event.name;
   document.getElementById("detailCode").innerText = event.code;
   document.getElementById("detailDesc").innerText = event.desc || "Chưa cập nhật";
-  document.getElementById("detailSpeaker").innerText =
-    event.speaker || "Chưa cập nhật";
-  document.getElementById("detailTime").innerText = window.ClubStorage.formatDateRange(
-    event.start,
-    event.end,
-  );
+  document.getElementById("detailSpeaker").innerText = event.speaker || "Chưa cập nhật";
+  document.getElementById("detailTime").innerText = window.ClubStorage.formatDateRange(event.start, event.end);
   document.getElementById("detailLocation").innerText = event.location;
   document.getElementById("detailMax").innerText = `${event.registered}/${event.max}`;
   document.getElementById("detailStatus").innerText = status.text;
@@ -348,20 +359,14 @@ function syncRegisterFieldValidation(fieldId) {
   if (!value) {
     setRegisterFieldError(fieldId, "Thông tin này đang thiếu trong hồ sơ tài khoản.");
   }
-
-  const hasInlineErrors = Object.values(registerFieldErrors).some((element) => {
-    return element.innerText.trim() !== "";
-  });
-
-  if (!hasInlineErrors) {
-    registerSummaryError.innerText = "";
-  }
+  const hasInlineErrors = Object.values(registerFieldErrors).some(
+    (element) => element.innerText.trim() !== "",
+  );
+  if (!hasInlineErrors) registerSummaryError.innerText = "";
 }
 
 async function openRegister() {
-  if (!(await ensureStudentAccess())) {
-    return;
-  }
+  if (!(await ensureStudentAccess())) return;
 
   const event = await window.ClubStorage.getEventById(currentEventId);
 
@@ -379,9 +384,7 @@ async function openRegister() {
     return;
   }
 
-  if (
-    await window.ClubStorage.hasStudentRegistration(event.id, currentUser.studentId)
-  ) {
+  if (await window.ClubStorage.hasStudentRegistration(event.id, currentUser.studentId)) {
     showToast("Bạn đã đăng ký sự kiện này rồi.", "#1c5da9", "#154a8a");
     closeModal();
     return;
@@ -394,9 +397,7 @@ async function openRegister() {
 }
 
 async function registerEvent() {
-  if (!(await ensureStudentAccess())) {
-    return;
-  }
+  if (!(await ensureStudentAccess())) return;
 
   clearRegisterValidation();
 
@@ -419,10 +420,7 @@ async function registerEvent() {
   const result = await window.ClubStorage.registerStudent(currentEventId, payload);
 
   if (!result.ok) {
-    if (
-      result.message.includes("MSSV này đã đăng ký") ||
-      result.message.includes("MSSV")
-    ) {
+    if (result.message.includes("MSSV này đã đăng ký") || result.message.includes("MSSV")) {
       setRegisterFieldError("studentId", result.message);
     }
     registerSummaryError.innerText = result.message;
@@ -438,8 +436,8 @@ async function registerEvent() {
 
 function renderHistory() {
   const html = historyEntries
-    .map((entry) => {
-      return `
+    .map(
+      (entry) => `
         <tr>
           <td>${escapeHtml(entry.eventCode || "-")}</td>
           <td>${escapeHtml(entry.eventName)}</td>
@@ -450,47 +448,217 @@ function renderHistory() {
           <td>${escapeHtml(window.ClubStorage.formatDateTime(entry.registeredAt))}</td>
           <td>${escapeHtml(entry.status || "Đã đăng ký")}</td>
         </tr>
-      `;
-    })
+      `,
+    )
     .join("");
 
   document.getElementById("historyList").innerHTML =
     html ||
-    `
-      <tr>
-        <td colspan="8">Chưa có lịch sử đăng ký nào cho tài khoản này.</td>
-      </tr>
-    `;
+    `<tr><td colspan="8">Chưa có lịch sử đăng ký nào cho tài khoản này.</td></tr>`;
+}
+const SECTIONS = {
+  eventList: "menuEvents",
+  profile:   "menuProfile",
+  history:   "menuHistory",
+  feedback:  "menuFeedback",
+};
+
+function showSection(sectionId) {
+  Object.keys(SECTIONS).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  const target = document.getElementById(sectionId);
+  if (target) target.style.display = "block";
+
+  Object.values(SECTIONS).forEach((menuId) => {
+    const el = document.getElementById(menuId);
+    if (el) el.classList.remove("active");
+  });
+  const activeMenu = document.getElementById(SECTIONS[sectionId]);
+  if (activeMenu) activeMenu.classList.add("active");
 }
 
-function showEvents() {
-  document.getElementById("profile").style.display = "none";
-  document.getElementById("history").style.display = "none";
-  document.getElementById("eventList").style.display = "block";
+function showEvents()   { showSection("eventList"); }
+function showProfile()  { showSection("profile");   }
+function showHistory()  { showSection("history");   }
+function showFeedback() { showSection("feedback");  }
 
-  const items = document.querySelectorAll(".menu-item");
-  items.forEach((item) => item.classList.remove("active"));
-  items[0].classList.add("active");
+function toggleStudentMenu() {
+  const menu = document.getElementById("studentMenu");
+  const arrow = document.querySelector(".arrow");
+  if (menu.style.display === "none") {
+    menu.style.display = "block";
+    arrow.innerHTML = "▲";
+  } else {
+    menu.style.display = "none";
+    arrow.innerHTML = "▼";
+  }
 }
 
-function showProfile() {
-  document.getElementById("eventList").style.display = "none";
-  document.getElementById("history").style.display = "none";
-  document.getElementById("profile").style.display = "block";
-
-  const items = document.querySelectorAll(".menu-item");
-  items.forEach((item) => item.classList.remove("active"));
-  items[1].classList.add("active");
+function fbStarsText(n) {
+  return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
-function showHistory() {
-  document.getElementById("eventList").style.display = "none";
-  document.getElementById("profile").style.display = "none";
-  document.getElementById("history").style.display = "block";
+function fbCalcAvg(reviews) {
+  if (!reviews.length) return 0;
+  return (reviews.reduce((s, r) => s + r.stars, 0) / reviews.length).toFixed(1);
+}
 
-  const items = document.querySelectorAll(".menu-item");
-  items.forEach((item) => item.classList.remove("active"));
-  items[2].classList.add("active");
+function fbTodayStr() {
+  const now = new Date();
+  return `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}/${now.getFullYear()}`;
+}
+
+function onFbEventChange() {
+  setTimeout(() => {
+    const id = document.getElementById("fbEventSelect").value;
+    currentFbEventId = id || null;
+
+    const summary  = document.getElementById("fbRatingSummary");
+    const topBar   = document.getElementById("fbTopBar");
+    const heroName = document.getElementById("fbEventName");
+    const heroMeta = document.getElementById("fbEventMeta");
+
+    if (!id || !fbData[id]) {
+      heroName.textContent = "Chọn sự kiện để xem đánh giá";
+      heroMeta.textContent = "📍 —   📅 —";
+      summary.style.display = "none";
+      topBar.style.display  = "none";
+      document.getElementById("fbReviewList").innerHTML =
+        '<div class="no-reviews">Vui lòng chọn một sự kiện để xem đánh giá.</div>';
+      return;
+    }
+
+    const ev = fbData[id];
+    heroName.textContent = ev.name;
+    heroMeta.textContent = `📍 ${ev.location}   📅 ${ev.date}`;
+    summary.style.display = "";
+    topBar.style.display  = "";
+
+    renderFbReviews(id);
+  }, 0);
+}
+
+function renderFbReviews(id) {
+  const ev      = fbData[id];
+  const reviews = ev.reviews;
+
+  const avg = fbCalcAvg(reviews);
+  document.getElementById("fbAvgScore").textContent    = avg;
+  document.getElementById("fbAvgStars").textContent    = fbStarsText(Math.round(avg));
+  document.getElementById("fbReviewCount").textContent = `${reviews.length} đánh giá`;
+
+  const counts = [0, 0, 0, 0, 0];
+  reviews.forEach((r) => counts[r.stars - 1]++);
+  const barsEl = document.getElementById("fbRatingBars");
+  barsEl.innerHTML = "";
+  for (let i = 5; i >= 1; i--) {
+    const pct = reviews.length ? Math.round((counts[i - 1] / reviews.length) * 100) : 0;
+    barsEl.innerHTML += `
+      <div class="rating-bar-row">
+        <span class="bar-label">${i}★</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <span>${counts[i - 1]}</span>
+      </div>`;
+  }
+
+  const listEl = document.getElementById("fbReviewList");
+  if (!reviews.length) {
+    listEl.innerHTML = '<div class="no-reviews">Chưa có đánh giá nào. Hãy là người đầu tiên!</div>';
+    return;
+  }
+
+  listEl.innerHTML = reviews
+    .slice()
+    .reverse()
+    .map(
+      (r) => `
+      <div class="review-card">
+        <div class="review-card-header">
+          <div class="review-card-meta">
+            <div class="reviewer-avatar">${escapeHtml(r.name.charAt(0))}</div>
+            <div>
+              <div class="reviewer-name">${escapeHtml(r.name)}</div>
+              <div class="reviewer-date">${escapeHtml(r.date)}</div>
+            </div>
+          </div>
+          <div class="review-stars">${fbStarsText(r.stars)}</div>
+        </div>
+        <p class="review-content">${
+          r.content
+            ? escapeHtml(r.content)
+            : '<em style="color:#bbb">Không có nội dung</em>'
+        }</p>
+        ${r.image ? `<img src="${r.image}" class="review-image" alt="ảnh đính kèm" />` : ""}
+      </div>
+    `,
+    )
+    .join("");
+}
+
+function openFbModal() {
+  if (!currentFbEventId) {
+    showToast("Vui lòng chọn sự kiện trước!", "#850E35");
+    return;
+  }
+  const ev = fbData[currentFbEventId];
+  document.getElementById("fbModalEventName").textContent = `Sự kiện: ${ev.name}`;
+  document.getElementById("fbContent").value = "";
+  document.getElementById("fbFileName").textContent = "Chưa chọn ảnh";
+  document.getElementById("fbFileInput").value = "";
+  document.getElementById("fbStarError").style.display = "none";
+  document.querySelectorAll('[name="fbRating"]').forEach((r) => (r.checked = false));
+  document.getElementById("feedbackModal").classList.add("open");
+}
+
+function closeFbModal() {
+  document.getElementById("feedbackModal").classList.remove("open");
+}
+
+function onFbFileChange() {
+  const file = document.getElementById("fbFileInput").files[0];
+  document.getElementById("fbFileName").textContent = file ? file.name : "Chưa chọn ảnh";
+}
+
+function submitFbReview() {
+  const radios = document.querySelectorAll('[name="fbRating"]');
+  let selected = null;
+  radios.forEach((r) => { if (r.checked) selected = parseInt(r.value); });
+
+  if (!selected) {
+    document.getElementById("fbStarError").style.display = "";
+    return;
+  }
+  document.getElementById("fbStarError").style.display = "none";
+
+  const content      = document.getElementById("fbContent").value.trim();
+  const file         = document.getElementById("fbFileInput").files[0];
+  const reviewerName = currentUser ? currentUser.studentName : "Sinh viên";
+
+  const addReview = (imgSrc) => {
+    fbData[currentFbEventId].reviews.push({
+      name:    reviewerName,
+      stars:   selected,
+      content: content,
+      date:    fbTodayStr(),
+      image:   imgSrc || null,
+    });
+    renderFbReviews(currentFbEventId);
+    closeFbModal();
+    showToast("Cảm ơn bạn đã gửi đánh giá! 🎉", "#1f8b4c", "#146c3a");
+  };
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => addReview(e.target.result);
+    reader.readAsDataURL(file);
+  } else {
+    addReview(null);
+  }
 }
 
 async function handleLogout() {
@@ -501,18 +669,11 @@ async function handleLogout() {
 async function openRequestedContextFromUrl() {
   const { eventId, action, view } = getPageContextFromUrl();
 
-  if (view === "profile") {
-    showProfile();
-  }
+  if (view === "profile")  showProfile();
+  if (view === "history")  showHistory();
+  if (view === "feedback") showFeedback();
 
-  if (view === "history") {
-    showHistory();
-  }
-
-  if (!eventId) {
-    clearPageContextFromUrl();
-    return;
-  }
+  if (!eventId) { clearPageContextFromUrl(); return; }
 
   const requestedEvent = await window.ClubStorage.getEventById(eventId);
 
@@ -536,15 +697,13 @@ async function openRequestedContextFromUrl() {
 }
 
 async function refreshPage() {
-  if (!(await loadState())) {
-    return false;
-  }
-
+  if (!(await loadState())) return false;
   renderAuthPanel();
   renderStudentQr();
   syncRegisterFormWithSession();
   renderEvents();
   renderHistory();
+  initFbData();
   return true;
 }
 
@@ -554,98 +713,75 @@ function showToast(message, color = "#850E35", accentColor = "#cf3439") {
   toast.style.background = color;
   toast.style.borderLeftColor = accentColor;
   toast.classList.add("show");
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2200);
+  setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
 function handleAsyncError(error) {
   console.error(error);
-  showToast(
-    error?.message || "Không thể đồng bộ dữ liệu sinh viên lúc này.",
-    "#850E35",
-    "#c0171f",
-  );
+  showToast(error?.message || "Không thể đồng bộ dữ liệu sinh viên lúc này.", "#850E35", "#c0171f");
 }
 
-document.getElementById("menuBtn").onclick = function onMenuClick() {
+let lastRefreshTime = 0;
+const REFRESH_COOLDOWN_MS = 60_000; // 1 minute minimum between background refreshes
+
+function onTabVisible() {
+  if (document.visibilityState !== "visible") return;
+  const now = Date.now();
+  if (now - lastRefreshTime < REFRESH_COOLDOWN_MS) return;
+  lastRefreshTime = now;
+  refreshPage().catch(handleAsyncError);
+}
+
+document.getElementById("menuBtn").onclick = () => {
   document.getElementById("sidebar").classList.toggle("hide");
 };
 
 document.getElementById("search").addEventListener("input", renderEvents);
-homeShortcutBtn.addEventListener("click", function onHomeClick() {
-  window.location.href = "../events/index.html";
-});
-logoutBtn.addEventListener("click", function onLogoutClick() {
-  handleLogout().catch(handleAsyncError);
-});
+homeShortcutBtn.addEventListener("click", () => { window.location.href = "../events/index.html"; });
+logoutBtn.addEventListener("click", () => handleLogout().catch(handleAsyncError));
 
 Object.keys(registerRequiredFields).forEach((fieldId) => {
-  document.getElementById(fieldId).addEventListener("input", function onInput() {
-    syncRegisterFieldValidation(fieldId);
-  });
-  document.getElementById(fieldId).addEventListener("change", function onChange() {
-    syncRegisterFieldValidation(fieldId);
-  });
+  document.getElementById(fieldId).addEventListener("input",  () => syncRegisterFieldValidation(fieldId));
+  document.getElementById(fieldId).addEventListener("change", () => syncRegisterFieldValidation(fieldId));
 });
 
-registerForm.addEventListener("submit", function onSubmit(event) {
-  event.preventDefault();
+registerForm.addEventListener("submit", (e) => {
+  e.preventDefault();
   registerEvent().catch(handleAsyncError);
 });
 
-function toggleStudentMenu() {
-  const menu = document.getElementById("studentMenu");
-  const arrow = document.querySelector(".arrow");
+document.getElementById("feedbackModal").addEventListener("click", function (e) {
+  if (e.target === this) closeFbModal();
+});
 
-  if (menu.style.display === "none" || menu.style.display === "") {
-    menu.style.display = "block";
-    arrow.innerHTML = "▲";
-  } else {
-    menu.style.display = "none";
-    arrow.innerHTML = "▼";
-  }
-}
-
-window.onclick = function onWindowClick(event) {
-  const detailModal = document.getElementById("detailModal");
-  const registerModal = document.getElementById("registerModal");
-
-  if (event.target === detailModal) {
-    closeModal();
-  }
-
-  if (event.target === registerModal) {
-    closeRegister();
-  }
+window.onclick = function (event) {
+  if (event.target === document.getElementById("detailModal"))   closeModal();
+  if (event.target === document.getElementById("registerModal")) closeRegister();
 };
 
-window.addEventListener("focus", function onFocus() {
-  refreshPage().catch(handleAsyncError);
-});
+document.addEventListener("visibilitychange", onTabVisible);
 
-window.ClubAuth.subscribe(function onAuthChange() {
-  refreshPage().catch(handleAsyncError);
-});
+window.ClubAuth.subscribe(() => refreshPage().catch(handleAsyncError));
 
-window.closeModal = closeModal;
-window.closeRegister = closeRegister;
+window.showSection           = showSection;
+window.showEvents            = showEvents;
+window.showProfile           = showProfile;
+window.showHistory           = showHistory;
+window.showFeedback          = showFeedback;
+window.toggleStudentMenu     = toggleStudentMenu;
+window.closeModal            = closeModal;
+window.closeRegister         = closeRegister;
 window.handleEventRowKeydown = handleEventRowKeydown;
-window.openEventDetail = openEventDetail;
-window.openRegister = openRegister;
-window.renderEvents = renderEvents;
-window.showEvents = showEvents;
-window.showHistory = showHistory;
-window.showProfile = showProfile;
-window.toggleStudentMenu = toggleStudentMenu;
+window.openEventDetail       = openEventDetail;
+window.openRegister          = openRegister;
+window.renderEvents          = renderEvents;
+window.onFbEventChange       = onFbEventChange;
+window.openFbModal           = openFbModal;
+window.closeFbModal          = closeFbModal;
+window.onFbFileChange        = onFbFileChange;
+window.submitFbReview        = submitFbReview;
 
+lastRefreshTime = Date.now(); // mark boot time so tab-switch right after load doesn't double-refresh
 refreshPage()
-  .then(function afterRefresh(isReady) {
-    if (isReady) {
-      return openRequestedContextFromUrl();
-    }
-
-    return null;
-  })
+  .then((isReady) => { if (isReady) return openRequestedContextFromUrl(); return null; })
   .catch(handleAsyncError);
