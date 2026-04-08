@@ -14,6 +14,17 @@ Vuyp-AGILE/
 |   |       `-- template.xlsx
 |   |-- scripts/
 |   |   `-- supabase/
+|   |       |-- schema/
+|   |       |   |-- 00_block_signup.sql
+|   |       |   |-- 01_profiles.sql
+|   |       |   |-- 02_events.sql
+|   |       |   |-- 03_registrations.sql
+|   |       |   |-- 04_event_feedback.sql
+|   |       |   |-- 05_rls.sql
+|   |       |   |-- 06_updated_at_triggers.sql
+|   |       |   |-- 07_registered_count.sql
+|   |       |   |-- 08_handle_new_user.sql
+|   |       |   `-- README.md
 |   |       `-- schema.sql
 |   |-- package.json
 |   `-- server.js
@@ -55,7 +66,9 @@ Vuyp-AGILE/
 - `frontend/src/services/supabase-config.js` chi doc bien moi truong va ap dung mapping schema/runtime cho frontend.
 - Frontend dung Supabase JS client nen chi can URL + anon key. Connection string PostgreSQL chi nen dung cho backend/script an toan, khong dung truc tiep trong trinh duyet.
 - Backend hien tai tap trung vao runtime server, tool import Excel va tai lieu schema Supabase.
-- Script Supabase con giu lai trong repo nam o `backend/scripts/supabase/`, hien tai chu yeu la `schema.sql` de tham chieu cau truc DB.
+- Script Supabase trong repo nam o `backend/scripts/supabase/`.
+- Thu muc `backend/scripts/supabase/schema/` chua cac file SQL da tach nho theo tung phan va co danh so thu tu chay.
+- File `backend/scripts/supabase/schema.sql` gio dong vai tro muc luc/tham chieu nhanh cho bo schema da tach.
 - Tool import sinh vien tu Excel nam trong `backend/tools/student-import/`.
 - Trang quan tri sinh vien thu cong nam o `frontend/public/pages/admin/students.html`, cho phep CRUD tung tai khoan sinh vien qua giao dien admin.
 - Runtime server de deploy nam trong `backend/server.js`; server nay cung serve frontend va endpoint `/app-env.json`.

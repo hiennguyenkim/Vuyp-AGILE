@@ -65,6 +65,14 @@ function sortRegistrations(registrations) {
   });
 }
 
+function sortFeedbackEntries(entries) {
+  return [...entries].sort((firstEntry, secondEntry) => {
+    const firstTime = Date.parse(firstEntry.createdAt || "") || 0;
+    const secondTime = Date.parse(secondEntry.createdAt || "") || 0;
+    return secondTime - firstTime;
+  });
+}
+
 function formatDateTime(value) {
   if (!value) {
     return "Chưa cập nhật";
@@ -204,12 +212,27 @@ async function ensureSupabase() {
 
 function mapSupabaseError(error, fallbackMessage) {
   const message = normalizeString(error?.message);
+  const normalizedMessage = message.toLowerCase();
 
   if (!message) {
     return fallbackMessage;
   }
 
-  if (message.toLowerCase().includes("fetch")) {
+  if (normalizedMessage.includes("row-level security")) {
+    return (
+      "Thao tac bi tu choi boi chinh sach quyen truy cap Supabase. " +
+      "Hay kiem tra RLS, dang nhap hien tai, va dieu kien nghiep vu cua thao tac nay."
+    );
+  }
+
+  if (
+    normalizedMessage.includes("relation") &&
+    normalizedMessage.includes("event_feedback")
+  ) {
+    return "Bang event_feedback chua duoc tao tren Supabase. Hay ap dung schema SQL moi nhat.";
+  }
+
+  if (normalizedMessage.includes("fetch")) {
     return "Khong the ket noi toi Supabase. Vui long kiem tra mang va cau hinh.";
   }
 
@@ -432,6 +455,57 @@ function getProfileColumns() {
   };
 }
 
+function getFeedbackColumns() {
+  return {
+    authUserId: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.authUserIdColumn,
+      "user_id",
+      "auth_user_id",
+    ]),
+    content: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.contentColumn,
+      "content",
+      "comment",
+    ]),
+    createdAt: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.createdAtColumn,
+      "created_at",
+      "createdAt",
+    ]),
+    eventId: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.eventIdColumn,
+      "event_id",
+      "eventId",
+    ]),
+    id: uniqueValues([CLUB_SUPABASE_CONFIG.feedback.idColumn, "id"]),
+    imageUrl: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.imageUrlColumn,
+      "image_url",
+      "image",
+    ]),
+    profileId: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.profileIdColumn,
+      "profile_id",
+    ]),
+    rating: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.ratingColumn,
+      "rating",
+      "stars",
+    ]),
+    reviewerName: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.reviewerNameColumn,
+      "reviewer_name",
+      "student_name",
+      "name",
+    ]),
+    updatedAt: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.updatedAtColumn,
+      "updated_at",
+      "updatedAt",
+    ]),
+  };
+}
+
 function normalizeProfileRow(row) {
   const profileColumns = getProfileColumns();
 
@@ -539,6 +613,27 @@ function normalizeRegistrationRow(row, eventMap, profileMaps) {
   };
 }
 
+function normalizeFeedbackRow(row) {
+  const feedbackColumns = getFeedbackColumns();
+
+  return {
+    id: normalizeString(pickFirst(row, feedbackColumns.id)),
+    eventId: normalizeString(pickFirst(row, feedbackColumns.eventId)),
+    profileId: normalizeString(pickFirst(row, feedbackColumns.profileId)),
+    authUserId: normalizeString(pickFirst(row, feedbackColumns.authUserId)),
+    reviewerName:
+      normalizeString(pickFirst(row, feedbackColumns.reviewerName)) || "Sinh viên",
+    stars: Math.min(
+      5,
+      Math.max(1, normalizeNumber(pickFirst(row, feedbackColumns.rating), 1)),
+    ),
+    content: normalizeString(pickFirst(row, feedbackColumns.content)),
+    image: normalizeString(pickFirst(row, feedbackColumns.imageUrl)),
+    createdAt: normalizeString(pickFirst(row, feedbackColumns.createdAt)),
+    updatedAt: normalizeString(pickFirst(row, feedbackColumns.updatedAt)),
+  };
+}
+
 async function fetchEventRows() {
   try {
     return await fetchEventRowsFromApi();
@@ -584,6 +679,44 @@ async function fetchRegistrationRows(filters = {}) {
   return data ?? [];
 }
 
+async function fetchFeedbackRows(filters = {}) {
+  await ensureSupabase();
+  let query = supabase
+    .from(CLUB_SUPABASE_CONFIG.tables.feedback)
+    .select("*");
+  const createdAtColumn =
+    CLUB_SUPABASE_CONFIG.feedback.createdAtColumn || "created_at";
+  const normalizedEventId = normalizeString(filters.eventId);
+  const normalizedUserId = normalizeString(filters.userId);
+  const normalizedEventIds = uniqueValues(
+    Array.isArray(filters.eventIds)
+      ? filters.eventIds.map((value) => normalizeString(value)).filter(Boolean)
+      : [],
+  );
+
+  if (normalizedEventId) {
+    query = query.eq(CLUB_SUPABASE_CONFIG.feedback.eventIdColumn, normalizedEventId);
+  }
+
+  if (normalizedEventIds.length > 0) {
+    query = query.in(CLUB_SUPABASE_CONFIG.feedback.eventIdColumn, normalizedEventIds);
+  }
+
+  if (normalizedUserId) {
+    query = query.eq(CLUB_SUPABASE_CONFIG.feedback.authUserIdColumn, normalizedUserId);
+  }
+
+  const { data, error } = await query.order(createdAtColumn, { ascending: false });
+
+  if (error) {
+    throw new Error(
+      mapSupabaseError(error, "Khong the tai danh sach danh gia tu Supabase."),
+    );
+  }
+
+  return data ?? [];
+}
+
 async function fetchNormalizedEvents() {
   const eventRows = await fetchEventRows();
   return sortEvents(eventRows.map((row) => normalizeEventRow(row)));
@@ -623,6 +756,11 @@ async function fetchNormalizedRegistrations(filters = {}) {
       normalizeRegistrationRow(row, eventMap, profileMaps),
     ),
   );
+}
+
+async function fetchNormalizedFeedback(filters = {}) {
+  const feedbackRows = await fetchFeedbackRows(filters);
+  return sortFeedbackEntries(feedbackRows.map((row) => normalizeFeedbackRow(row)));
 }
 
 async function readState() {
@@ -740,6 +878,10 @@ async function getHistoryEntries(studentId) {
   });
 }
 
+async function getFeedbackEntries(filters = {}) {
+  return fetchNormalizedFeedback(filters);
+}
+
 async function getNextEventCode() {
   const events = await fetchNormalizedEvents();
   const nextCodeNumber =
@@ -780,6 +922,32 @@ function buildEventWritePayload(payload, options = {}) {
 
   if (CLUB_SUPABASE_CONFIG.event.updatedAtColumn) {
     writePayload[CLUB_SUPABASE_CONFIG.event.updatedAtColumn] = now;
+  }
+
+  return writePayload;
+}
+
+function buildFeedbackWritePayload(eventId, payload, authState) {
+  const session = authState.session || window.ClubAuth.getCurrentSession?.();
+  const profile = authState.profile || window.ClubAuth.getCurrentProfile?.();
+  const reviewerName =
+    normalizeString(payload?.reviewerName) ||
+    normalizeString(profile?.studentName) ||
+    normalizeString(profile?.displayName) ||
+    "Sinh viên";
+  const rating = Math.min(5, Math.max(1, normalizeNumber(payload?.rating, 1)));
+  const writePayload = {
+    [CLUB_SUPABASE_CONFIG.feedback.eventIdColumn]: normalizeString(eventId),
+    [CLUB_SUPABASE_CONFIG.feedback.authUserIdColumn]:
+      normalizeString(session?.user?.id),
+    [CLUB_SUPABASE_CONFIG.feedback.reviewerNameColumn]: reviewerName,
+    [CLUB_SUPABASE_CONFIG.feedback.ratingColumn]: rating,
+    [CLUB_SUPABASE_CONFIG.feedback.contentColumn]: normalizeString(payload?.content),
+    [CLUB_SUPABASE_CONFIG.feedback.imageUrlColumn]: normalizeString(payload?.image),
+  };
+
+  if (CLUB_SUPABASE_CONFIG.feedback.profileIdColumn && profile?.id) {
+    writePayload[CLUB_SUPABASE_CONFIG.feedback.profileIdColumn] = profile.id;
   }
 
   return writePayload;
@@ -1016,6 +1184,48 @@ async function registerStudent(eventId, studentOrStudentId) {
   };
 }
 
+async function saveEventFeedback(eventId, payload = {}) {
+  const normalizedEventId = normalizeString(eventId);
+
+  if (!normalizedEventId) {
+    throw new Error("Chua chon su kien de gui danh gia.");
+  }
+
+  await window.ClubAuth.ready();
+  const authState = await window.ClubAuth.readAuthState();
+  const authUserId = normalizeString(authState.session?.user?.id);
+
+  if (!authUserId) {
+    throw new Error("Ban can dang nhap lai de gui danh gia.");
+  }
+
+  const rating = normalizeNumber(payload?.rating, 0);
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new Error("So sao danh gia khong hop le.");
+  }
+
+  await ensureSupabase();
+
+  const conflictColumns = [
+    CLUB_SUPABASE_CONFIG.feedback.eventIdColumn,
+    CLUB_SUPABASE_CONFIG.feedback.authUserIdColumn,
+  ].join(",");
+  const { data, error } = await supabase
+    .from(CLUB_SUPABASE_CONFIG.tables.feedback)
+    .upsert(buildFeedbackWritePayload(normalizedEventId, payload, authState), {
+      onConflict: conflictColumns,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(mapSupabaseError(error, "Khong the gui danh gia su kien."));
+  }
+
+  return normalizeFeedbackRow(data);
+}
+
 window.ClubStorage = {
   createEvent,
   deleteEvent,
@@ -1023,6 +1233,7 @@ window.ClubStorage = {
   formatDateTime,
   getEventById,
   getEvents,
+  getFeedbackEntries,
   getEventStatus,
   getHistoryEntries,
   getRegistrations,
@@ -1032,7 +1243,9 @@ window.ClubStorage = {
   normalizeString,
   readState,
   registerStudent,
+  saveEventFeedback,
   sortEvents,
+  sortFeedbackEntries,
   sortRegistrations,
   toDatabaseDateTime,
   toDateTimeLocalValue,

@@ -3,6 +3,7 @@ import "../../services/storage.js";
 
 let events = [];
 let historyEntries = [];
+let feedbackEntries = [];
 let currentEventId = null;
 let currentUser = null;
 
@@ -31,37 +32,91 @@ const registerFieldErrors = {
   studentGender: document.getElementById("studentGenderError"),
 };
 
-const fbData = {};
+let fbData = {};
 let currentFbEventId = null;
 
-function initFbData() {
-  events.forEach((event) => {
-    if (!fbData[event.id]) {
-      fbData[event.id] = {
-        name: event.name,
-        location: event.location,
-        date: window.ClubStorage.formatDateRange(event.start, event.end),
-        reviews: [],
-      };
-    }
-  });
+function isFeedbackEligibleHistoryEntry(entry) {
+  const endTime = Date.parse(entry?.end || "");
+  const startTime = Date.parse(entry?.start || "");
+  const referenceTime = Number.isFinite(endTime) ? endTime : startTime;
 
+  return Number.isFinite(referenceTime) && referenceTime <= Date.now();
+}
+
+function getFeedbackEligibleHistoryEntries() {
+  const uniqueEntries = new Map();
+
+  historyEntries
+    .filter((entry) => {
+      return Boolean(entry?.eventId) && isFeedbackEligibleHistoryEntry(entry);
+    })
+    .forEach((entry) => {
+      if (!uniqueEntries.has(entry.eventId)) {
+        uniqueEntries.set(entry.eventId, entry);
+      }
+    });
+
+  return Array.from(uniqueEntries.values()).sort((firstEntry, secondEntry) => {
+    const firstTime =
+      Date.parse(firstEntry?.end || firstEntry?.start || "") || 0;
+    const secondTime =
+      Date.parse(secondEntry?.end || secondEntry?.start || "") || 0;
+
+    return secondTime - firstTime;
+  });
+}
+
+function initFbData() {
+  const eligibleEntries = getFeedbackEligibleHistoryEntries();
+  const nextFbData = {};
   const sel = document.getElementById("fbEventSelect");
   if (!sel) return;
 
-  const previousValue = sel.value;
+  const previousValue = currentFbEventId || sel.value;
+
+  eligibleEntries.forEach((entry) => {
+    nextFbData[entry.eventId] = {
+      name: entry.eventName,
+      location: entry.location,
+      date: window.ClubStorage.formatDateRange(entry.start, entry.end),
+      reviews: [],
+    };
+  });
+
+  feedbackEntries.forEach((review) => {
+    if (!nextFbData[review.eventId]) {
+      return;
+    }
+
+    nextFbData[review.eventId].reviews.push(review);
+  });
+
+  Object.keys(nextFbData).forEach((eventId) => {
+    nextFbData[eventId].reviews = window.ClubStorage.sortFeedbackEntries(
+      nextFbData[eventId].reviews,
+    );
+  });
+
+  fbData = nextFbData;
 
   sel.innerHTML = '<option value="">-- Chọn sự kiện --</option>';
-  events.forEach((event) => {
+  eligibleEntries.forEach((entry) => {
     const opt = document.createElement("option");
-    opt.value = event.id;
-    opt.textContent = `${event.name} | ${window.ClubStorage.formatDateRange(event.start, event.end)}`;
+    opt.value = entry.eventId;
+    opt.textContent =
+      `${entry.eventName} | ` +
+      window.ClubStorage.formatDateRange(entry.start, entry.end);
     sel.appendChild(opt);
   });
 
-  if (previousValue && fbData[previousValue]) {
+  if (previousValue && nextFbData[previousValue]) {
     sel.value = previousValue;
+    currentFbEventId = previousValue;
+    return;
   }
+
+  currentFbEventId = null;
+  sel.value = "";
 }
 
 // ============================================================
@@ -135,6 +190,15 @@ async function loadState() {
   ]);
   events = window.ClubStorage.sortEvents(loadedEvents);
   historyEntries = window.ClubStorage.sortRegistrations(loadedHistory);
+  const feedbackEventIds = getFeedbackEligibleHistoryEntries().map(
+    (entry) => entry.eventId,
+  );
+  feedbackEntries =
+    feedbackEventIds.length > 0
+      ? await window.ClubStorage
+          .getFeedbackEntries({ eventIds: feedbackEventIds })
+          .catch(() => [])
+      : [];
   return true;
 }
 
@@ -506,11 +570,21 @@ function fbCalcAvg(reviews) {
   return (reviews.reduce((s, r) => s + r.stars, 0) / reviews.length).toFixed(1);
 }
 
-function fbTodayStr() {
-  const now = new Date();
-  return `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1)
-    .toString()
-    .padStart(2, "0")}/${now.getFullYear()}`;
+function getOwnFbReview(eventId) {
+  const normalizedEventId = window.ClubStorage.normalizeString(eventId);
+  const normalizedUserId = window.ClubStorage.normalizeString(currentUser?.id);
+
+  if (!normalizedEventId || !normalizedUserId || !fbData[normalizedEventId]) {
+    return null;
+  }
+
+  return (
+    fbData[normalizedEventId].reviews.find((review) => {
+      return (
+        window.ClubStorage.normalizeString(review.authUserId) === normalizedUserId
+      );
+    }) || null
+  );
 }
 
 function onFbEventChange() {
@@ -522,14 +596,25 @@ function onFbEventChange() {
     const topBar   = document.getElementById("fbTopBar");
     const heroName = document.getElementById("fbEventName");
     const heroMeta = document.getElementById("fbEventMeta");
+    const listEl   = document.getElementById("fbReviewList");
+    const submitButton = document.getElementById("fbSubmitBtn");
+    const hasEligibleEvents = Object.keys(fbData).length > 0;
 
     if (!id || !fbData[id]) {
-      heroName.textContent = "Chọn sự kiện để xem đánh giá";
-      heroMeta.textContent = "📍 —   📅 —";
+      heroName.textContent = hasEligibleEvents
+        ? "Chọn sự kiện để xem đánh giá"
+        : "Chưa có sự kiện nào để đánh giá";
+      heroMeta.textContent = hasEligibleEvents
+        ? "📍 —   📅 —"
+        : "Các sự kiện đã kết thúc mà bạn từng đăng ký sẽ xuất hiện tại đây.";
       summary.style.display = "none";
       topBar.style.display  = "none";
-      document.getElementById("fbReviewList").innerHTML =
-        '<div class="no-reviews">Vui lòng chọn một sự kiện để xem đánh giá.</div>';
+      listEl.innerHTML = hasEligibleEvents
+        ? '<div class="no-reviews">Vui lòng chọn một sự kiện để xem đánh giá.</div>'
+        : '<div class="no-reviews">Bạn chưa có sự kiện nào đủ điều kiện để gửi đánh giá.</div>';
+      if (submitButton) {
+        submitButton.textContent = "Gửi đánh giá";
+      }
       return;
     }
 
@@ -538,6 +623,11 @@ function onFbEventChange() {
     heroMeta.textContent = `📍 ${ev.location}   📅 ${ev.date}`;
     summary.style.display = "";
     topBar.style.display  = "";
+    if (submitButton) {
+      submitButton.textContent = getOwnFbReview(id)
+        ? "Cập nhật đánh giá"
+        : "Gửi đánh giá";
+    }
 
     renderFbReviews(id);
   }, 0);
@@ -573,17 +663,15 @@ function renderFbReviews(id) {
   }
 
   listEl.innerHTML = reviews
-    .slice()
-    .reverse()
     .map(
       (r) => `
       <div class="review-card">
         <div class="review-card-header">
           <div class="review-card-meta">
-            <div class="reviewer-avatar">${escapeHtml(r.name.charAt(0))}</div>
+            <div class="reviewer-avatar">${escapeHtml(r.reviewerName.charAt(0))}</div>
             <div>
-              <div class="reviewer-name">${escapeHtml(r.name)}</div>
-              <div class="reviewer-date">${escapeHtml(r.date)}</div>
+              <div class="reviewer-name">${escapeHtml(r.reviewerName)}</div>
+              <div class="reviewer-date">${escapeHtml(window.ClubStorage.formatDateTime(r.createdAt))}</div>
             </div>
           </div>
           <div class="review-stars">${fbStarsText(r.stars)}</div>
@@ -606,12 +694,23 @@ function openFbModal() {
     return;
   }
   const ev = fbData[currentFbEventId];
+  const existingReview = getOwnFbReview(currentFbEventId);
   document.getElementById("fbModalEventName").textContent = `Sự kiện: ${ev.name}`;
-  document.getElementById("fbContent").value = "";
-  document.getElementById("fbFileName").textContent = "Chưa chọn ảnh";
+  document.getElementById("fbContent").value = existingReview?.content || "";
+  document.getElementById("fbFileName").textContent = existingReview?.image
+    ? "Giữ ảnh hiện có nếu không chọn ảnh mới"
+    : "Chưa chọn ảnh";
   document.getElementById("fbFileInput").value = "";
   document.getElementById("fbStarError").style.display = "none";
-  document.querySelectorAll('[name="fbRating"]').forEach((r) => (r.checked = false));
+  document.querySelectorAll('[name="fbRating"]').forEach((radio) => {
+    radio.checked = Number(radio.value) === Number(existingReview?.stars || 0);
+  });
+  const submitButton = document.getElementById("fbSubmitBtn");
+  if (submitButton) {
+    submitButton.textContent = existingReview
+      ? "Cập nhật đánh giá"
+      : "Gửi đánh giá";
+  }
   document.getElementById("feedbackModal").classList.add("open");
 }
 
@@ -624,7 +723,12 @@ function onFbFileChange() {
   document.getElementById("fbFileName").textContent = file ? file.name : "Chưa chọn ảnh";
 }
 
-function submitFbReview() {
+async function submitFbReview() {
+  if (!currentFbEventId || !fbData[currentFbEventId]) {
+    showToast("Vui lòng chọn sự kiện trước!", "#850E35");
+    return;
+  }
+
   const radios = document.querySelectorAll('[name="fbRating"]');
   let selected = null;
   radios.forEach((r) => { if (r.checked) selected = parseInt(r.value); });
@@ -637,27 +741,74 @@ function submitFbReview() {
 
   const content      = document.getElementById("fbContent").value.trim();
   const file         = document.getElementById("fbFileInput").files[0];
+  const existingReview = getOwnFbReview(currentFbEventId);
   const reviewerName = currentUser ? currentUser.studentName : "Sinh viên";
 
-  const addReview = (imgSrc) => {
-    fbData[currentFbEventId].reviews.push({
-      name:    reviewerName,
-      stars:   selected,
-      content: content,
-      date:    fbTodayStr(),
-      image:   imgSrc || null,
-    });
+  const addReview = async (imgSrc) => {
+    const savedReview = await window.ClubStorage.saveEventFeedback(
+      currentFbEventId,
+      {
+        reviewerName,
+        rating: selected,
+        content,
+        image: imgSrc,
+      },
+    );
+    fbData[currentFbEventId].reviews = window.ClubStorage.sortFeedbackEntries(
+      [
+        savedReview,
+        ...fbData[currentFbEventId].reviews.filter((review) => {
+          return (
+            window.ClubStorage.normalizeString(review.id) !==
+              window.ClubStorage.normalizeString(savedReview.id) &&
+            !(
+              window.ClubStorage.normalizeString(review.eventId) ===
+                window.ClubStorage.normalizeString(savedReview.eventId) &&
+              window.ClubStorage.normalizeString(review.authUserId) ===
+                window.ClubStorage.normalizeString(savedReview.authUserId)
+            )
+          );
+        }),
+      ],
+    );
+    feedbackEntries = window.ClubStorage.sortFeedbackEntries(
+      [
+        savedReview,
+        ...feedbackEntries.filter((review) => {
+          return (
+            window.ClubStorage.normalizeString(review.id) !==
+              window.ClubStorage.normalizeString(savedReview.id) &&
+            !(
+              window.ClubStorage.normalizeString(review.eventId) ===
+                window.ClubStorage.normalizeString(savedReview.eventId) &&
+              window.ClubStorage.normalizeString(review.authUserId) ===
+                window.ClubStorage.normalizeString(savedReview.authUserId)
+            )
+          );
+        }),
+      ],
+    );
     renderFbReviews(currentFbEventId);
     closeFbModal();
-    showToast("Cảm ơn bạn đã gửi đánh giá! 🎉", "#1f8b4c", "#146c3a");
+    showToast(
+      existingReview
+        ? "Đã cập nhật đánh giá của bạn."
+        : "Cảm ơn bạn đã gửi đánh giá!",
+      "#1f8b4c",
+      "#146c3a",
+    );
   };
 
   if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => addReview(e.target.result);
-    reader.readAsDataURL(file);
+    const imageDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target?.result || "");
+      reader.onerror = () => reject(new Error("Khong the doc anh dinh kem."));
+      reader.readAsDataURL(file);
+    });
+    await addReview(imageDataUrl);
   } else {
-    addReview(null);
+    await addReview(existingReview?.image || null);
   }
 }
 
@@ -704,6 +855,7 @@ async function refreshPage() {
   renderEvents();
   renderHistory();
   initFbData();
+  onFbEventChange();
   return true;
 }
 
@@ -779,7 +931,7 @@ window.onFbEventChange       = onFbEventChange;
 window.openFbModal           = openFbModal;
 window.closeFbModal          = closeFbModal;
 window.onFbFileChange        = onFbFileChange;
-window.submitFbReview        = submitFbReview;
+window.submitFbReview        = () => submitFbReview().catch(handleAsyncError);
 
 lastRefreshTime = Date.now(); // mark boot time so tab-switch right after load doesn't double-refresh
 refreshPage()

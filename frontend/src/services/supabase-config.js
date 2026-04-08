@@ -10,6 +10,10 @@ const DEFAULT_SUPABASE_CONFIG = {
       "SUPABASE_TABLE_REGISTRATIONS",
       "registrations",
     ),
+    feedback: getEnvValue(
+      "SUPABASE_TABLE_EVENT_FEEDBACK",
+      "event_feedback",
+    ),
   },
   auth: {
     identityDomain: getEnvValue("SUPABASE_AUTH_IDENTITY_DOMAIN"),
@@ -81,9 +85,13 @@ const DEFAULT_SUPABASE_CONFIG = {
       "SUPABASE_REGISTRATION_STUDENT_ID_COLUMN",
       "student_id",
     ),
-    profileIdColumn: getEnvValue("SUPABASE_REGISTRATION_PROFILE_ID_COLUMN"),
+    profileIdColumn: getEnvValue(
+      "SUPABASE_REGISTRATION_PROFILE_ID_COLUMN",
+      "profile_id",
+    ),
     authUserIdColumn: getEnvValue(
       "SUPABASE_REGISTRATION_AUTH_USER_ID_COLUMN",
+      "user_id",
     ),
     studentNameColumn: getEnvValue(
       "SUPABASE_REGISTRATION_STUDENT_NAME_COLUMN",
@@ -101,6 +109,36 @@ const DEFAULT_SUPABASE_CONFIG = {
     registeredAtColumn: getEnvValue(
       "SUPABASE_REGISTRATION_REGISTERED_AT_COLUMN",
       "registered_at",
+    ),
+  },
+  feedback: {
+    idColumn: getEnvValue("SUPABASE_FEEDBACK_ID_COLUMN", "id"),
+    eventIdColumn: getEnvValue("SUPABASE_FEEDBACK_EVENT_ID_COLUMN", "event_id"),
+    profileIdColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_PROFILE_ID_COLUMN",
+      "profile_id",
+    ),
+    authUserIdColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_AUTH_USER_ID_COLUMN",
+      "user_id",
+    ),
+    reviewerNameColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_REVIEWER_NAME_COLUMN",
+      "reviewer_name",
+    ),
+    ratingColumn: getEnvValue("SUPABASE_FEEDBACK_RATING_COLUMN", "rating"),
+    contentColumn: getEnvValue("SUPABASE_FEEDBACK_CONTENT_COLUMN", "content"),
+    imageUrlColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_IMAGE_URL_COLUMN",
+      "image_url",
+    ),
+    createdAtColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_CREATED_AT_COLUMN",
+      "created_at",
+    ),
+    updatedAtColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_UPDATED_AT_COLUMN",
+      "updated_at",
     ),
   },
 };
