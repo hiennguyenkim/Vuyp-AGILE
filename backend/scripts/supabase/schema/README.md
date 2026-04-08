@@ -14,6 +14,13 @@ Run these files in order when setting up or updating the database schema:
 Optional:
 
 - `00_block_signup.sql`: helper function reference if you want to block self-signup from the client side.
+- `09_event_feedback_moderation.sql`: upgrade script for databases that already created `event_feedback` before moderation fields were added.
+
+If your database already has `event_feedback` from an older version:
+
+1. Run `09_event_feedback_moderation.sql`
+2. Re-run `05_rls.sql`
+3. Keep `06_updated_at_triggers.sql` if needed
 
 Notes:
 

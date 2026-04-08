@@ -2,6 +2,7 @@ import "../../services/auth.js";
 import "../../services/storage.js";
 
 let events = [];
+let feedbackEntries = [];
 let registrations = [];
 let deleteEventId = null;
 let recentlySavedEventId = null;
@@ -18,9 +19,13 @@ const detailSection = document.getElementById("eventDetailSection");
 const adminName = document.getElementById("adminName");
 const adminRole = document.getElementById("adminRole");
 const btnViewRegistrations = document.getElementById("btnViewRegistrations");
+const btnViewFeedback = document.getElementById("btnViewFeedback");
 const btnOpenRegistrationsPage = document.getElementById("btnOpenRegistrationsPage");
+const btnOpenFeedbackPage = document.getElementById("btnOpenFeedbackPage");
 const detailRegistrationTitle = document.getElementById("detailRegistrationTitle");
 const detailRegistrationSummary = document.getElementById("detailRegistrationSummary");
+const detailFeedbackTitle = document.getElementById("detailFeedbackTitle");
+const detailFeedbackSummary = document.getElementById("detailFeedbackSummary");
 const importStudentsBtn = document.getElementById("importStudentsBtn");
 const homeBtn = document.getElementById("homeBtn");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -50,6 +55,10 @@ const DEFAULT_DETAIL_REGISTRATION_TITLE =
   "Mở danh sách đăng ký và điểm danh riêng cho sự kiện này";
 const DEFAULT_DETAIL_REGISTRATION_SUMMARY =
   "Chọn một sự kiện để xem danh sách đăng ký và trạng thái điểm danh theo từng chương trình.";
+const DEFAULT_DETAIL_FEEDBACK_TITLE =
+  "Mở danh sách đánh giá riêng cho sự kiện này";
+const DEFAULT_DETAIL_FEEDBACK_SUMMARY =
+  "Chọn một sự kiện để xem đánh giá của sinh viên, ẩn phản hồi không phù hợp hoặc xóa nội dung khi cần.";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -105,6 +114,13 @@ function buildEventRegistrationsUrl(eventId) {
     : "event-registrations.html";
 }
 
+function buildEventFeedbackUrl(eventId) {
+  const normalizedEventId = normalizeString(eventId);
+  return normalizedEventId
+    ? `event-feedback.html?eventId=${encodeURIComponent(normalizedEventId)}`
+    : "event-feedback.html";
+}
+
 function openEventRegistrations(eventId = selectedDetailEventId) {
   const normalizedEventId = normalizeString(eventId);
 
@@ -114,6 +130,17 @@ function openEventRegistrations(eventId = selectedDetailEventId) {
   }
 
   window.location.href = buildEventRegistrationsUrl(normalizedEventId);
+}
+
+function openEventFeedbackPage(eventId = selectedDetailEventId) {
+  const normalizedEventId = normalizeString(eventId);
+
+  if (!normalizedEventId) {
+    showToast("Hãy chọn một sự kiện trước khi mở đánh giá.");
+    return;
+  }
+
+  window.location.href = buildEventFeedbackUrl(normalizedEventId);
 }
 
 function openImportModal() {
@@ -329,9 +356,13 @@ async function loadState() {
     return false;
   }
 
-  const state = await window.ClubStorage.readState();
+  const [state, allFeedbackEntries] = await Promise.all([
+    window.ClubStorage.readState(),
+    window.ClubStorage.getFeedbackEntries().catch(() => []),
+  ]);
   events = window.ClubStorage.sortEvents(state.events);
   registrations = window.ClubStorage.sortRegistrations(state.registrations);
+  feedbackEntries = window.ClubStorage.sortFeedbackEntries(allFeedbackEntries);
   return true;
 }
 
@@ -419,9 +450,13 @@ function hideDetailPanel() {
   selectedDetailEventId = null;
   detailSection.style.display = "none";
   btnViewRegistrations.disabled = true;
+  btnViewFeedback.disabled = true;
   btnOpenRegistrationsPage.disabled = true;
+  btnOpenFeedbackPage.disabled = true;
   detailRegistrationTitle.innerText = DEFAULT_DETAIL_REGISTRATION_TITLE;
   detailRegistrationSummary.innerText = DEFAULT_DETAIL_REGISTRATION_SUMMARY;
+  detailFeedbackTitle.innerText = DEFAULT_DETAIL_FEEDBACK_TITLE;
+  detailFeedbackSummary.innerText = DEFAULT_DETAIL_FEEDBACK_SUMMARY;
   setSelectedEventInUrl("");
 }
 
@@ -454,11 +489,20 @@ function renderDetailPanel(eventId) {
   const checkedInCount = eventRegistrations.filter((registration) => {
     return Boolean(registration.checkedInAt) || Boolean(registration.checkedIn);
   }).length;
+  const eventFeedback = feedbackEntries.filter((feedback) => feedback.eventId === event.id);
+  const hiddenFeedbackCount = eventFeedback.filter((feedback) => feedback.isHidden).length;
 
   btnViewRegistrations.disabled = false;
+  btnViewFeedback.disabled = false;
   btnOpenRegistrationsPage.disabled = false;
+  btnOpenFeedbackPage.disabled = false;
   detailRegistrationTitle.innerText = `Danh sách sinh viên của ${event.code}`;
   detailRegistrationSummary.innerText = `${eventRegistrations.length} lượt đăng ký, ${checkedInCount} lượt đã điểm danh. Mở trang riêng để xem đầy đủ danh sách sinh viên và trạng thái check-in của sự kiện này.`;
+  detailFeedbackTitle.innerText = `Đánh giá của ${event.code}`;
+  detailFeedbackSummary.innerText =
+    eventFeedback.length === 0
+      ? "Sự kiện này chưa có đánh giá nào từ sinh viên."
+      : `${eventFeedback.length} đánh giá, ${hiddenFeedbackCount} lượt đang bị ẩn. Mở trang riêng để rà soát nội dung và điều chỉnh trạng thái hiển thị.`;
   setSelectedEventInUrl(event.id);
 }
 
@@ -519,6 +563,7 @@ function renderEventsView() {
           </td>
           <td>
             <button class="secondary-btn action-inline" onclick="viewEventDetail('${event.id}')">Chi tiết</button>
+            <button class="secondary-btn action-inline" onclick="openEventFeedbackPage('${event.id}')">Đánh giá</button>
             <button class="edit-btn" onclick="editEvent('${event.id}')">Sửa</button>
             <button class="delete-btn" onclick="deleteEvent('${event.id}')">Xóa sự kiện</button>
           </td>
@@ -830,8 +875,16 @@ btnViewRegistrations.addEventListener("click", function onViewRegistrations() {
   openEventRegistrations();
 });
 
+btnViewFeedback.addEventListener("click", function onViewFeedback() {
+  openEventFeedbackPage();
+});
+
 btnOpenRegistrationsPage.addEventListener("click", function onOpenRegistrationsPage() {
   openEventRegistrations();
+});
+
+btnOpenFeedbackPage.addEventListener("click", function onOpenFeedbackPage() {
+  openEventFeedbackPage();
 });
 
 Object.keys(requiredFields).forEach((fieldId) => {
@@ -883,6 +936,7 @@ window.ClubAuth.subscribe(function onAuthChange() {
 window.deleteEvent = deleteEvent;
 window.deleteFromDetail = deleteFromDetail;
 window.editEvent = editEvent;
+window.openEventFeedbackPage = openEventFeedbackPage;
 window.viewEventDetail = viewEventDetail;
 
 refreshPage().catch(handleAsyncError);

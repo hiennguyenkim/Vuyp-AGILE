@@ -132,6 +132,18 @@ const DEFAULT_SUPABASE_CONFIG = {
       "SUPABASE_FEEDBACK_IMAGE_URL_COLUMN",
       "image_url",
     ),
+    isHiddenColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_IS_HIDDEN_COLUMN",
+      "is_hidden",
+    ),
+    hiddenAtColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_HIDDEN_AT_COLUMN",
+      "hidden_at",
+    ),
+    hiddenByColumn: getEnvValue(
+      "SUPABASE_FEEDBACK_HIDDEN_BY_COLUMN",
+      "hidden_by",
+    ),
     createdAtColumn: getEnvValue(
       "SUPABASE_FEEDBACK_CREATED_AT_COLUMN",
       "created_at",

@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS public.event_feedback (
   rating        SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
   content       TEXT,
   image_url     TEXT,
+  is_hidden     BOOLEAN NOT NULL DEFAULT FALSE,
+  hidden_at     TIMESTAMPTZ,
+  hidden_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(event_id, user_id)
@@ -21,3 +24,6 @@ CREATE INDEX IF NOT EXISTS event_feedback_user_id_idx
   ON public.event_feedback(user_id);
 CREATE INDEX IF NOT EXISTS event_feedback_created_at_idx
   ON public.event_feedback(created_at DESC);
+CREATE INDEX IF NOT EXISTS event_feedback_visible_event_created_idx
+  ON public.event_feedback(event_id, created_at DESC)
+  WHERE is_hidden = FALSE;

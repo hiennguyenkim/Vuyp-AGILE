@@ -132,13 +132,19 @@ DROP POLICY IF EXISTS "event_feedback_admin_delete" ON public.event_feedback;
 CREATE POLICY "event_feedback_select_authenticated"
   ON public.event_feedback FOR SELECT
   TO authenticated
-  USING (true);
+  USING (
+    COALESCE(is_hidden, FALSE) = FALSE
+    OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+  );
 
 CREATE POLICY "event_feedback_student_insert"
   ON public.event_feedback FOR INSERT
   TO authenticated
   WITH CHECK (
     user_id = auth.uid()
+    AND COALESCE(is_hidden, FALSE) = FALSE
+    AND hidden_at IS NULL
+    AND hidden_by IS NULL
     AND EXISTS (
       SELECT 1
       FROM public.registrations
@@ -156,9 +162,15 @@ CREATE POLICY "event_feedback_student_insert"
 CREATE POLICY "event_feedback_student_update"
   ON public.event_feedback FOR UPDATE
   TO authenticated
-  USING (user_id = auth.uid())
+  USING (
+    user_id = auth.uid()
+    AND COALESCE(is_hidden, FALSE) = FALSE
+  )
   WITH CHECK (
     user_id = auth.uid()
+    AND COALESCE(is_hidden, FALSE) = FALSE
+    AND hidden_at IS NULL
+    AND hidden_by IS NULL
     AND EXISTS (
       SELECT 1
       FROM public.registrations
@@ -170,7 +182,10 @@ CREATE POLICY "event_feedback_student_update"
 CREATE POLICY "event_feedback_student_delete"
   ON public.event_feedback FOR DELETE
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    AND COALESCE(is_hidden, FALSE) = FALSE
+  );
 
 CREATE POLICY "event_feedback_admin_insert"
   ON public.event_feedback FOR INSERT

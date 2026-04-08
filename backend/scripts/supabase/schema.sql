@@ -16,6 +16,7 @@
 --
 -- Tuy chon:
 --   00_block_signup.sql
+--   09_event_feedback_moderation.sql
 --
 -- Huong dan:
 -- - Mo tung file trong thu muc schema/ va chay theo thu tu tren trong Supabase SQL Editor.

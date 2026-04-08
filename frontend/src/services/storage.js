@@ -232,6 +232,18 @@ function mapSupabaseError(error, fallbackMessage) {
     return "Bang event_feedback chua duoc tao tren Supabase. Hay ap dung schema SQL moi nhat.";
   }
 
+  if (
+    normalizedMessage.includes("column") &&
+    (normalizedMessage.includes("is_hidden") ||
+      normalizedMessage.includes("hidden_at") ||
+      normalizedMessage.includes("hidden_by"))
+  ) {
+    return (
+      "Bang event_feedback chua co day du cot moderation. " +
+      "Hay chay file nang cap event_feedback moderation moi nhat."
+    );
+  }
+
   if (normalizedMessage.includes("fetch")) {
     return "Khong the ket noi toi Supabase. Vui long kiem tra mang va cau hinh.";
   }
@@ -483,6 +495,21 @@ function getFeedbackColumns() {
       "image_url",
       "image",
     ]),
+    isHidden: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.isHiddenColumn,
+      "is_hidden",
+      "hidden",
+    ]),
+    hiddenAt: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.hiddenAtColumn,
+      "hidden_at",
+      "hiddenAt",
+    ]),
+    hiddenBy: uniqueValues([
+      CLUB_SUPABASE_CONFIG.feedback.hiddenByColumn,
+      "hidden_by",
+      "hiddenBy",
+    ]),
     profileId: uniqueValues([
       CLUB_SUPABASE_CONFIG.feedback.profileIdColumn,
       "profile_id",
@@ -510,6 +537,7 @@ function normalizeProfileRow(row) {
   const profileColumns = getProfileColumns();
 
   return {
+    id: normalizeString(pickFirst(row, ["id"])),
     authUserId: normalizeString(pickFirst(row, profileColumns.authUserId)),
     displayName: normalizeString(pickFirst(row, profileColumns.displayName)),
     role: normalizeString(pickFirst(row, profileColumns.role)),
@@ -522,10 +550,15 @@ function normalizeProfileRow(row) {
 
 function buildProfileMaps(rows) {
   const mapByAuthUserId = new Map();
+  const mapByProfileId = new Map();
   const mapByStudentId = new Map();
 
   rows.forEach((row) => {
     const profile = normalizeProfileRow(row);
+
+    if (profile.id) {
+      mapByProfileId.set(profile.id, profile);
+    }
 
     if (profile.authUserId) {
       mapByAuthUserId.set(profile.authUserId, profile);
@@ -538,6 +571,7 @@ function buildProfileMaps(rows) {
 
   return {
     mapByAuthUserId,
+    mapByProfileId,
     mapByStudentId,
   };
 }
@@ -613,22 +647,42 @@ function normalizeRegistrationRow(row, eventMap, profileMaps) {
   };
 }
 
-function normalizeFeedbackRow(row) {
+function normalizeFeedbackRow(row, eventMap, profileMaps) {
   const feedbackColumns = getFeedbackColumns();
+  const eventId = normalizeString(pickFirst(row, feedbackColumns.eventId));
+  const profileId = normalizeString(pickFirst(row, feedbackColumns.profileId));
+  const authUserId = normalizeString(pickFirst(row, feedbackColumns.authUserId));
+  const profile =
+    profileMaps?.mapByProfileId?.get(profileId) ||
+    profileMaps?.mapByAuthUserId?.get(authUserId) ||
+    null;
+  const event = eventMap?.get(eventId) || null;
+  const isHidden = Boolean(pickFirst(row, feedbackColumns.isHidden));
 
   return {
     id: normalizeString(pickFirst(row, feedbackColumns.id)),
-    eventId: normalizeString(pickFirst(row, feedbackColumns.eventId)),
-    profileId: normalizeString(pickFirst(row, feedbackColumns.profileId)),
-    authUserId: normalizeString(pickFirst(row, feedbackColumns.authUserId)),
+    eventId,
+    eventCode: normalizeString(row.event_code) || event?.code || "",
+    eventName: normalizeString(row.event_name) || event?.name || "",
+    profileId,
+    authUserId,
     reviewerName:
-      normalizeString(pickFirst(row, feedbackColumns.reviewerName)) || "Sinh viên",
+      normalizeString(pickFirst(row, feedbackColumns.reviewerName)) ||
+      profile?.studentName ||
+      profile?.displayName ||
+      "Sinh viên",
+    studentId: profile?.studentId || "",
+    studentCourse: profile?.studentCourse || "",
+    studentGender: profile?.studentGender || "",
     stars: Math.min(
       5,
       Math.max(1, normalizeNumber(pickFirst(row, feedbackColumns.rating), 1)),
     ),
     content: normalizeString(pickFirst(row, feedbackColumns.content)),
     image: normalizeString(pickFirst(row, feedbackColumns.imageUrl)),
+    isHidden,
+    hiddenAt: normalizeString(pickFirst(row, feedbackColumns.hiddenAt)),
+    hiddenBy: normalizeString(pickFirst(row, feedbackColumns.hiddenBy)),
     createdAt: normalizeString(pickFirst(row, feedbackColumns.createdAt)),
     updatedAt: normalizeString(pickFirst(row, feedbackColumns.updatedAt)),
   };
@@ -759,8 +813,18 @@ async function fetchNormalizedRegistrations(filters = {}) {
 }
 
 async function fetchNormalizedFeedback(filters = {}) {
-  const feedbackRows = await fetchFeedbackRows(filters);
-  return sortFeedbackEntries(feedbackRows.map((row) => normalizeFeedbackRow(row)));
+  const [eventRows, feedbackRows, profileRows] = await Promise.all([
+    fetchEventRows(),
+    fetchFeedbackRows(filters),
+    fetchProfileRows(),
+  ]);
+  const events = sortEvents(eventRows.map((row) => normalizeEventRow(row)));
+  const eventMap = new Map(events.map((event) => [event.id, event]));
+  const profileMaps = buildProfileMaps(profileRows);
+
+  return sortFeedbackEntries(
+    feedbackRows.map((row) => normalizeFeedbackRow(row, eventMap, profileMaps)),
+  );
 }
 
 async function readState() {
@@ -951,6 +1015,22 @@ function buildFeedbackWritePayload(eventId, payload, authState) {
   }
 
   return writePayload;
+}
+
+function buildFeedbackModerationPayload(payload, authState) {
+  const session = authState.session || window.ClubAuth.getCurrentSession?.();
+  const isHidden = Boolean(payload?.isHidden);
+  const moderationPayload = {
+    [CLUB_SUPABASE_CONFIG.feedback.isHiddenColumn]: isHidden,
+    [CLUB_SUPABASE_CONFIG.feedback.hiddenAtColumn]: isHidden
+      ? new Date().toISOString()
+      : null,
+    [CLUB_SUPABASE_CONFIG.feedback.hiddenByColumn]: isHidden
+      ? normalizeString(session?.user?.id)
+      : null,
+  };
+
+  return moderationPayload;
 }
 
 async function createEvent(payload) {
@@ -1223,12 +1303,75 @@ async function saveEventFeedback(eventId, payload = {}) {
     throw new Error(mapSupabaseError(error, "Khong the gui danh gia su kien."));
   }
 
-  return normalizeFeedbackRow(data);
+  return normalizeFeedbackRow(data, new Map(), buildProfileMaps([]));
+}
+
+async function setEventFeedbackVisibility(feedbackId, isHidden) {
+  const normalizedFeedbackId = normalizeString(feedbackId);
+
+  if (!normalizedFeedbackId) {
+    throw new Error("Khong tim thay danh gia can cap nhat.");
+  }
+
+  await window.ClubAuth.ready();
+  const authState = await window.ClubAuth.readAuthState();
+
+  if (!authState.session?.user?.id) {
+    throw new Error("Ban can dang nhap lai de cap nhat trang thai danh gia.");
+  }
+
+  await ensureSupabase();
+  const { data, error } = await supabase
+    .from(CLUB_SUPABASE_CONFIG.tables.feedback)
+    .update(buildFeedbackModerationPayload({ isHidden }, authState))
+    .eq(CLUB_SUPABASE_CONFIG.feedback.idColumn, normalizedFeedbackId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(
+      mapSupabaseError(error, "Khong the cap nhat trang thai hien thi danh gia."),
+    );
+  }
+
+  const normalizedRows = await fetchNormalizedFeedback({
+    eventId: normalizeString(
+      pickFirst(data, getFeedbackColumns().eventId),
+    ),
+  }).catch(() => []);
+
+  return (
+    normalizedRows.find((row) => normalizeString(row.id) === normalizedFeedbackId) ||
+    normalizeFeedbackRow(data, new Map(), buildProfileMaps([]))
+  );
+}
+
+async function deleteEventFeedback(feedbackId) {
+  const normalizedFeedbackId = normalizeString(feedbackId);
+
+  if (!normalizedFeedbackId) {
+    throw new Error("Khong tim thay danh gia can xoa.");
+  }
+
+  await ensureSupabase();
+  const { error } = await supabase
+    .from(CLUB_SUPABASE_CONFIG.tables.feedback)
+    .delete()
+    .eq(CLUB_SUPABASE_CONFIG.feedback.idColumn, normalizedFeedbackId);
+
+  if (error) {
+    throw new Error(mapSupabaseError(error, "Khong the xoa danh gia luc nay."));
+  }
+
+  return {
+    ok: true,
+  };
 }
 
 window.ClubStorage = {
   createEvent,
   deleteEvent,
+  deleteEventFeedback,
   formatDateRange,
   formatDateTime,
   getEventById,
@@ -1244,6 +1387,7 @@ window.ClubStorage = {
   readState,
   registerStudent,
   saveEventFeedback,
+  setEventFeedbackVisibility,
   sortEvents,
   sortFeedbackEntries,
   sortRegistrations,
