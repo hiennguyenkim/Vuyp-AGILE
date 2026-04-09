@@ -149,7 +149,21 @@ CREATE POLICY "event_feedback_student_insert"
       SELECT 1
       FROM public.registrations
       WHERE public.registrations.event_id = public.event_feedback.event_id
-        AND public.registrations.user_id = auth.uid()
+        AND (
+          public.registrations.user_id = auth.uid()
+          OR (
+            COALESCE(
+              (SELECT student_id FROM public.profiles WHERE id = auth.uid()),
+              ''
+            ) <> ''
+            AND public.registrations.student_id =
+              (SELECT student_id FROM public.profiles WHERE id = auth.uid())
+          )
+        )
+        AND (
+          COALESCE(public.registrations.checked_in, FALSE) = TRUE
+          OR public.registrations.checked_in_at IS NOT NULL
+        )
     )
     AND EXISTS (
       SELECT 1
@@ -157,34 +171,6 @@ CREATE POLICY "event_feedback_student_insert"
       WHERE public.events.id = public.event_feedback.event_id
         AND public.events."end" <= NOW()
     )
-  );
-
-CREATE POLICY "event_feedback_student_update"
-  ON public.event_feedback FOR UPDATE
-  TO authenticated
-  USING (
-    user_id = auth.uid()
-    AND COALESCE(is_hidden, FALSE) = FALSE
-  )
-  WITH CHECK (
-    user_id = auth.uid()
-    AND COALESCE(is_hidden, FALSE) = FALSE
-    AND hidden_at IS NULL
-    AND hidden_by IS NULL
-    AND EXISTS (
-      SELECT 1
-      FROM public.registrations
-      WHERE public.registrations.event_id = public.event_feedback.event_id
-        AND public.registrations.user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "event_feedback_student_delete"
-  ON public.event_feedback FOR DELETE
-  TO authenticated
-  USING (
-    user_id = auth.uid()
-    AND COALESCE(is_hidden, FALSE) = FALSE
   );
 
 CREATE POLICY "event_feedback_admin_insert"

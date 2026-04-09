@@ -213,6 +213,7 @@ async function ensureSupabase() {
 function mapSupabaseError(error, fallbackMessage) {
   const message = normalizeString(error?.message);
   const normalizedMessage = message.toLowerCase();
+  const normalizedCode = normalizeString(error?.code).toLowerCase();
 
   if (!message) {
     return fallbackMessage;
@@ -242,6 +243,16 @@ function mapSupabaseError(error, fallbackMessage) {
       "Bang event_feedback chua co day du cot moderation. " +
       "Hay chay file nang cap event_feedback moderation moi nhat."
     );
+  }
+
+  if (
+    normalizedCode === "23505" &&
+    (
+      normalizedMessage.includes("event_feedback") ||
+      normalizedMessage.includes("event_id_user_id")
+    )
+  ) {
+    return "Bạn đã đánh giá sự kiện này rồi";
   }
 
   if (normalizedMessage.includes("fetch")) {
@@ -1274,6 +1285,12 @@ async function saveEventFeedback(eventId, payload = {}) {
   await window.ClubAuth.ready();
   const authState = await window.ClubAuth.readAuthState();
   const authUserId = normalizeString(authState.session?.user?.id);
+  const currentUser = window.ClubAuth.getCurrentUser?.() || null;
+  const normalizedStudentId = normalizeString(
+    currentUser?.studentId ||
+    authState.profile?.student_id ||
+    authState.profile?.studentId,
+  );
 
   if (!authUserId) {
     throw new Error("Ban can dang nhap lai de gui danh gia.");
@@ -1286,20 +1303,58 @@ async function saveEventFeedback(eventId, payload = {}) {
   }
 
   await ensureSupabase();
+  const registrationRows = await fetchRegistrationRows({ eventId: normalizedEventId });
+  const registrationColumns = getRegistrationColumns();
+  const attendedRegistration = registrationRows.find((row) => {
+    return (
+      (
+        normalizeString(pickFirst(row, registrationColumns.authUserId)) === authUserId ||
+        (
+          normalizedStudentId &&
+          normalizeString(pickFirst(row, registrationColumns.studentId)) === normalizedStudentId
+        )
+      ) &&
+      (
+        Boolean(pickFirst(row, registrationColumns.checkedIn)) ||
+        Boolean(normalizeString(pickFirst(row, registrationColumns.checkedInAt)))
+      )
+    );
+  });
 
-  const conflictColumns = [
-    CLUB_SUPABASE_CONFIG.feedback.eventIdColumn,
-    CLUB_SUPABASE_CONFIG.feedback.authUserIdColumn,
-  ].join(",");
+  if (!attendedRegistration) {
+    throw new Error("Bạn cần tham gia sự kiện để được gửi đánh giá");
+  }
+
+  const existingVisibleFeedback = await fetchFeedbackRows({
+    eventId: normalizedEventId,
+    userId: authUserId,
+  }).catch(() => []);
+
+  if (existingVisibleFeedback.length > 0) {
+    throw new Error("Bạn đã đánh giá sự kiện này rồi");
+  }
+
   const { data, error } = await supabase
     .from(CLUB_SUPABASE_CONFIG.tables.feedback)
-    .upsert(buildFeedbackWritePayload(normalizedEventId, payload, authState), {
-      onConflict: conflictColumns,
-    })
+    .insert(buildFeedbackWritePayload(normalizedEventId, payload, authState))
     .select("*")
     .single();
 
   if (error) {
+    const normalizedMessage = normalizeString(error?.message).toLowerCase();
+    const normalizedCode = normalizeString(error?.code).toLowerCase();
+
+    if (
+      normalizedCode === "23505" ||
+      normalizedMessage.includes("event_feedback_event_id_user_id_key")
+    ) {
+      throw new Error("Bạn đã đánh giá sự kiện này rồi");
+    }
+
+    if (normalizedMessage.includes("row-level security")) {
+      throw new Error("Bạn cần tham gia sự kiện để được gửi đánh giá");
+    }
+
     throw new Error(mapSupabaseError(error, "Khong the gui danh gia su kien."));
   }
 
