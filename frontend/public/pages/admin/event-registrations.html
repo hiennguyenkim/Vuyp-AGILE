@@ -82,6 +82,29 @@
         </div>
       </section>
 
+      <section class="surface-card gender-chart-section">
+        <div class="section-head">
+          <div>
+            <p class="section-eyebrow">Phân tích khán giả</p>
+            <h2>Tỷ lệ giới tính sinh viên đã check-in</h2>
+          </div>
+
+          <p id="genderChartMeta" class="table-meta">
+            Biểu đồ chỉ tính những sinh viên đã check-in thành công.
+          </p>
+        </div>
+
+        <div id="genderChartEmpty" class="gender-chart-empty" hidden>
+          Chưa có đủ dữ liệu Nam/Nữ từ danh sách sinh viên đã check-in để hiển thị biểu đồ.
+        </div>
+
+        <div class="gender-chart-shell">
+          <div class="gender-chart-canvas-wrap">
+            <canvas id="genderChart" aria-label="Biểu đồ tỷ lệ nam nữ tham gia sự kiện" role="img"></canvas>
+          </div>
+        </div>
+      </section>
+
       <section class="surface-card registration-table-section">
         <div class="section-head">
           <div>
@@ -122,6 +145,7 @@
 
     <script src="../../../src/services/app-config.js"></script>
     <script src="../../../src/utils/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="../../../src/pages/admin/event-registrations.js"></script>
   </body>
 </html>

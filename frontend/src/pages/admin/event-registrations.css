@@ -58,6 +58,7 @@
 }
 
 .event-summary-card,
+.gender-chart-section,
 .registration-table-section {
   padding: 28px;
 }
@@ -166,6 +167,26 @@
   max-width: 460px;
 }
 
+.gender-chart-shell {
+  display: flex;
+  justify-content: center;
+}
+
+.gender-chart-canvas-wrap {
+  position: relative;
+  width: min(100%, 420px);
+  min-height: 320px;
+}
+
+.gender-chart-empty {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-text-soft);
+  line-height: 1.7;
+}
+
 .admin-table td:last-child {
   white-space: nowrap;
 }
@@ -208,6 +229,7 @@
 @media (max-width: 720px) {
   .registrations-topbar,
   .event-summary-card,
+  .gender-chart-section,
   .registration-table-section {
     padding: 20px;
   }
