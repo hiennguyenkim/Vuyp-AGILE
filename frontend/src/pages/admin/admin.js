@@ -1,5 +1,10 @@
 import "../../services/auth.js";
 import "../../services/storage.js";
+import {
+  getNextPageFromAction,
+  paginateItems,
+  renderPaginationControls,
+} from "../../utils/pagination.js";
 
 let events = [];
 let feedbackEntries = [];
@@ -9,12 +14,23 @@ let recentlySavedEventId = null;
 let selectedDetailEventId = null;
 let currentUser = null;
 let importActionInFlight = "";
+let eventSearchTerm = "";
+let eventStatusFilter = "";
+let eventSortField = "start";
+let eventSortDirection = "asc";
+let eventPage = 1;
 
 const form = document.getElementById("eventForm");
 const list = document.getElementById("eventList");
+const eventSearchInput = document.getElementById("eventSearchInput");
+const eventStatusFilterSelect = document.getElementById("eventStatusFilter");
+const createEventShortcutBtn = document.getElementById("createEventShortcutBtn");
+const eventTableMeta = document.getElementById("eventTableMeta");
+const eventSortButtons = [...document.querySelectorAll(".event-sort-button")];
 const deleteMessage = document.getElementById("deleteMessage");
 const errorBox = document.getElementById("error");
 const successBox = document.getElementById("success");
+const eventTablePagination = document.getElementById("eventTablePagination");
 const detailSection = document.getElementById("eventDetailSection");
 const adminName = document.getElementById("adminName");
 const adminRole = document.getElementById("adminRole");
@@ -73,6 +89,194 @@ function normalizeString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function getEventStatusSnapshot(event) {
+  return window.ClubStorage.getEventStatus(event);
+}
+
+function getEventFeedbackStats(eventId) {
+  const normalizedEventId = normalizeString(eventId);
+  const eventFeedback = feedbackEntries.filter((feedback) => {
+    return normalizeString(feedback.eventId) === normalizedEventId;
+  });
+  const validRatings = eventFeedback
+    .map((feedback) => Number(feedback.stars) || 0)
+    .filter((stars) => stars > 0);
+  const averageRating =
+    validRatings.length > 0
+      ? validRatings.reduce((sum, stars) => sum + stars, 0) / validRatings.length
+      : 0;
+
+  return {
+    count: eventFeedback.length,
+    averageRating,
+    hiddenCount: eventFeedback.filter((feedback) => Boolean(feedback.isHidden)).length,
+  };
+}
+
+function formatAverageRating(averageRating) {
+  if (!Number.isFinite(averageRating) || averageRating <= 0) {
+    return "Chưa có";
+  }
+
+  return `${averageRating.toFixed(1)}/5`;
+}
+
+function getFilteredEvents() {
+  const keyword = eventSearchTerm.trim().toLowerCase();
+
+  return events.filter((event) => {
+    const status = getEventStatusSnapshot(event);
+    const haystack = [
+      event.code,
+      event.name,
+      event.location,
+      event.speaker,
+      event.desc,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    if (keyword && !haystack.includes(keyword)) {
+      return false;
+    }
+
+    if (eventStatusFilter && status.tone !== eventStatusFilter) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function getSortableEventValue(event, field) {
+  if (field === "start") {
+    return Date.parse(event.start || "") || 0;
+  }
+
+  if (field === "registered") {
+    return Number(event.registered) || 0;
+  }
+
+  if (field === "averageRating") {
+    return getEventFeedbackStats(event.id).averageRating;
+  }
+
+  if (field === "feedbackCount") {
+    return getEventFeedbackStats(event.id).count;
+  }
+
+  if (field === "status") {
+    const tone = getEventStatusSnapshot(event).tone;
+    const orderMap = {
+      live: 0,
+      open: 1,
+      full: 2,
+      ended: 3,
+    };
+    return orderMap[tone] ?? 99;
+  }
+
+  return normalizeString(event?.[field]).toLocaleLowerCase("vi");
+}
+
+function compareEvents(leftEvent, rightEvent) {
+  const direction = eventSortDirection === "desc" ? -1 : 1;
+  const leftValue = getSortableEventValue(leftEvent, eventSortField);
+  const rightValue = getSortableEventValue(rightEvent, eventSortField);
+
+  let compareResult = 0;
+
+  if (eventSortField === "start" || eventSortField === "registered" || eventSortField === "status") {
+    compareResult = Number(leftValue) - Number(rightValue);
+  } else {
+    compareResult = String(leftValue).localeCompare(String(rightValue), "vi", {
+      numeric: true,
+      sensitivity: "base",
+    });
+  }
+
+  if (compareResult === 0) {
+    compareResult = normalizeString(leftEvent.code).localeCompare(
+      normalizeString(rightEvent.code),
+      "vi",
+      {
+        numeric: true,
+        sensitivity: "base",
+      },
+    );
+  }
+
+  return compareResult * direction;
+}
+
+function getVisibleEvents() {
+  return [...getFilteredEvents()].sort(compareEvents);
+}
+
+function getActiveEventFilterSummary() {
+  const parts = [];
+  const eventStatusLabelMap = {
+    live: "đang diễn ra",
+    open: "sự kiện sắp diễn ra",
+    full: "đã đầy",
+    ended: "đã kết thúc",
+  };
+
+  if (eventStatusFilter) {
+    parts.push(`trạng thái ${eventStatusLabelMap[eventStatusFilter] || eventStatusFilter}`);
+  }
+
+  if (eventSearchTerm.trim()) {
+    parts.push(`từ khóa "${eventSearchTerm.trim()}"`);
+  }
+
+  return parts.join(", ");
+}
+
+function updateEventSortButtons() {
+  eventSortButtons.forEach((button) => {
+    const field = button.dataset.sortField || "";
+    const indicator = button.querySelector(".event-sort-indicator");
+    const isActive = field === eventSortField;
+
+    button.classList.toggle("is-active", isActive);
+
+    if (!indicator) {
+      return;
+    }
+
+    indicator.innerText = isActive
+      ? eventSortDirection === "desc"
+        ? "↓"
+        : "↑"
+      : "";
+  });
+}
+
+function updateEventTableMeta(visibleEvents) {
+  if (!eventTableMeta) {
+    return;
+  }
+
+  if (events.length === 0) {
+    eventTableMeta.innerText = "Chưa có sự kiện nào trong hệ thống. Hãy tạo sự kiện đầu tiên.";
+    return;
+  }
+
+  const activeFilterSummary = getActiveEventFilterSummary();
+
+  if (visibleEvents.length === 0) {
+    eventTableMeta.innerText = activeFilterSummary
+      ? `Không có sự kiện nào khớp với ${activeFilterSummary}.`
+      : "Hiện chưa có sự kiện nào phù hợp để hiển thị.";
+    return;
+  }
+
+  eventTableMeta.innerText = activeFilterSummary
+    ? `Đang hiển thị ${visibleEvents.length}/${events.length} sự kiện theo ${activeFilterSummary}.`
+    : `Đang hiển thị ${visibleEvents.length} sự kiện trong hệ thống.`;
+}
+
 async function ensureAdminAccess() {
   await window.ClubAuth.ready();
   currentUser = window.ClubAuth.getCurrentUser();
@@ -114,13 +318,6 @@ function buildEventRegistrationsUrl(eventId) {
     : "event-registrations.html";
 }
 
-function buildEventFeedbackUrl(eventId) {
-  const normalizedEventId = normalizeString(eventId);
-  return normalizedEventId
-    ? `event-feedback.html?eventId=${encodeURIComponent(normalizedEventId)}`
-    : "event-feedback.html";
-}
-
 function openEventRegistrations(eventId = selectedDetailEventId) {
   const normalizedEventId = normalizeString(eventId);
 
@@ -133,14 +330,7 @@ function openEventRegistrations(eventId = selectedDetailEventId) {
 }
 
 function openEventFeedbackPage(eventId = selectedDetailEventId) {
-  const normalizedEventId = normalizeString(eventId);
-
-  if (!normalizedEventId) {
-    showToast("Hãy chọn một sự kiện trước khi mở đánh giá.");
-    return;
-  }
-
-  window.location.href = buildEventFeedbackUrl(normalizedEventId);
+  openEventRegistrations(eventId);
 }
 
 function openImportModal() {
@@ -532,20 +722,48 @@ function updateSummary() {
 
 function renderEventsView() {
   updateSummary();
+  updateEventSortButtons();
 
   if (events.length === 0) {
     hideDetailPanel();
+    updateEventTableMeta([]);
+    renderPaginationControls(
+      eventTablePagination,
+      paginateItems([], eventPage),
+      { itemLabel: "sự kiện" },
+    );
     list.innerHTML = `
       <tr>
-        <td colspan="7">Chưa có sự kiện nào. Hãy tạo sự kiện đầu tiên.</td>
+        <td colspan="9">Chưa có sự kiện nào. Hãy tạo sự kiện đầu tiên.</td>
       </tr>
     `;
     return;
   }
 
-  list.innerHTML = events
+  const filteredEvents = getVisibleEvents();
+  updateEventTableMeta(filteredEvents);
+
+  if (filteredEvents.length === 0) {
+    renderPaginationControls(
+      eventTablePagination,
+      paginateItems([], eventPage),
+      { itemLabel: "sự kiện" },
+    );
+    list.innerHTML = `
+      <tr>
+        <td colspan="9">Không tìm thấy sự kiện nào khớp với bộ lọc hiện tại.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  const eventPagination = paginateItems(filteredEvents, eventPage);
+  eventPage = eventPagination.currentPage;
+
+  list.innerHTML = eventPagination.items
     .map((event) => {
-      const status = window.ClubStorage.getEventStatus(event);
+      const status = getEventStatusSnapshot(event);
+      const feedbackStats = getEventFeedbackStats(event.id);
       const rowClass = recentlySavedEventId === event.id ? "row-just-saved" : "";
       return `
         <tr class="${rowClass}" data-event-id="${escapeHtml(event.id)}">
@@ -557,13 +775,29 @@ function renderEventsView() {
           <td>${escapeHtml(event.location)}</td>
           <td>${event.registered}/${event.max}</td>
           <td>
+            <div class="event-rating-cell">
+              <strong>${escapeHtml(formatAverageRating(feedbackStats.averageRating))}</strong>
+              <span>${feedbackStats.count > 0 ? "Điểm trung bình" : "Chưa có phản hồi"}</span>
+            </div>
+          </td>
+          <td>
+            <div class="event-feedback-count-cell">
+              <strong>${feedbackStats.count}</strong>
+              <span>${feedbackStats.count === 1 ? "lượt đánh giá" : "lượt đánh giá"}</span>
+              ${
+                feedbackStats.hiddenCount > 0
+                  ? `<small>${feedbackStats.hiddenCount} lượt đang ẩn</small>`
+                  : ""
+              }
+            </div>
+          </td>
+          <td>
             <span class="status-badge status-${status.tone}">
               ${escapeHtml(status.text)}
             </span>
           </td>
           <td>
             <button class="secondary-btn action-inline" onclick="viewEventDetail('${event.id}')">Chi tiết</button>
-            <button class="secondary-btn action-inline" onclick="openEventFeedbackPage('${event.id}')">Đánh giá</button>
             <button class="edit-btn" onclick="editEvent('${event.id}')">Sửa</button>
             <button class="delete-btn" onclick="deleteEvent('${event.id}')">Xóa sự kiện</button>
           </td>
@@ -571,6 +805,10 @@ function renderEventsView() {
       `;
     })
     .join("");
+
+  renderPaginationControls(eventTablePagination, eventPagination, {
+    itemLabel: "sự kiện",
+  });
 
   if (recentlySavedEventId) {
     const activeRow = list.querySelector(
@@ -583,11 +821,7 @@ function renderEventsView() {
     }, 2400);
   }
 
-  if (selectedDetailEventId) {
-    renderDetailPanel(selectedDetailEventId);
-  } else {
-    hideDetailPanel();
-  }
+  hideDetailPanel();
 }
 
 async function refreshPage(options = {}) {
@@ -703,7 +937,6 @@ async function handleFormSubmit(event) {
     successBox.innerText = "Cập nhật thành công.";
     resetForm();
     await refreshPage({ keepMessages: true });
-    renderDetailPanel(result.event.id);
     return;
   }
 
@@ -713,7 +946,6 @@ async function handleFormSubmit(event) {
   resetForm();
   successBox.innerText = "Tạo sự kiện thành công.";
   await refreshPage({ keepMessages: true });
-  renderDetailPanel(result.event.id);
 }
 
 function editEvent(eventId) {
@@ -726,14 +958,12 @@ function editEvent(eventId) {
   }
 
   setEditingEvent(event);
-  renderDetailPanel(eventId);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function viewEventDetail(eventId) {
   resetMessages();
-  renderDetailPanel(eventId);
-  detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  openEventRegistrations(eventId);
 }
 
 function deleteEvent(eventId) {
@@ -799,6 +1029,14 @@ function handleAsyncError(error) {
   errorBox.innerText = error?.message || "Không thể đồng bộ dữ liệu lúc này.";
 }
 
+function focusCreateEventForm() {
+  resetMessages();
+  resetForm();
+  hideDetailPanel();
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("name").focus();
+}
+
 form.addEventListener("submit", function onSubmit(event) {
   handleFormSubmit(event).catch(handleAsyncError);
 });
@@ -806,6 +1044,10 @@ form.addEventListener("submit", function onSubmit(event) {
 document.getElementById("btnReset").addEventListener("click", function onReset() {
   resetForm();
   resetMessages();
+});
+
+createEventShortcutBtn.addEventListener("click", function onCreateEventShortcutClick() {
+  focusCreateEventForm();
 });
 
 homeBtn.addEventListener("click", function onHomeClick() {
@@ -899,6 +1141,50 @@ Object.keys(requiredFields).forEach((fieldId) => {
       errorBox.innerText = "";
     }
   });
+});
+
+eventSearchInput.addEventListener("input", function onEventSearchInput() {
+  eventSearchTerm = eventSearchInput.value;
+  eventPage = 1;
+  renderEventsView();
+});
+
+eventStatusFilterSelect.addEventListener("change", function onEventStatusFilterChange() {
+  eventStatusFilter = eventStatusFilterSelect.value;
+  eventPage = 1;
+  renderEventsView();
+});
+
+eventSortButtons.forEach((button) => {
+  button.addEventListener("click", function onEventSortClick() {
+    const field = normalizeString(button.dataset.sortField);
+
+    if (!field) {
+      return;
+    }
+
+    if (eventSortField === field) {
+      eventSortDirection = eventSortDirection === "asc" ? "desc" : "asc";
+    } else {
+      eventSortField = field;
+      eventSortDirection = field === "start" || field === "registered" ? "desc" : "asc";
+    }
+
+    renderEventsView();
+  });
+});
+
+eventTablePagination.addEventListener("click", function onEventPaginationClick(event) {
+  const targetButton = event.target.closest("[data-pagination-action]");
+
+  if (!(targetButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const action = normalizeString(targetButton.dataset.paginationAction);
+  const totalPages = Number(eventTablePagination.dataset.totalPages) || 1;
+  eventPage = getNextPageFromAction(action, eventPage, totalPages);
+  renderEventsView();
 });
 
 document.getElementById("confirmDelete").onclick = function onConfirmDelete() {

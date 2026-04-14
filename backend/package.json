@@ -4,7 +4,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "import:students": "node tools/student-import/cli.js"
+    "import:students": "node tools/student-import/cli.js",
+    "seed:test-event": "node tools/seed-test-event/cli.js"
   },
   "dependencies": {
     "exceljs": "^4.4.0"

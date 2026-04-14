@@ -167,21 +167,25 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 0;
+  padding: 4px 6px;
+  margin: -4px -6px;
   border: 0;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .student-sort-button:hover {
-  color: var(--color-brand-strong);
+  background: rgba(17, 79, 150, 0.08);
+  color: inherit;
 }
 
 .student-sort-button.is-active {
-  color: var(--color-brand-strong);
+  color: inherit;
 }
 
 .student-sort-indicator {
@@ -191,10 +195,12 @@
   min-width: 14px;
   color: var(--color-text-soft);
   font-size: 12px;
+  opacity: 0.8;
 }
 
 .student-sort-button.is-active .student-sort-indicator {
-  color: var(--color-brand-strong);
+  color: var(--color-text-soft);
+  opacity: 1;
 }
 
 .student-row-checkbox {

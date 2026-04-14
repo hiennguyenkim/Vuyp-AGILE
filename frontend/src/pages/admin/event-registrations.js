@@ -1,9 +1,20 @@
 import "../../services/auth.js";
 import "../../services/storage.js";
+import {
+  getNextPageFromAction,
+  paginateItems,
+  renderPaginationControls,
+} from "../../utils/pagination.js";
 
 let currentUser = null;
 let currentEventId = "";
 let genderChart = null;
+let registrationEntries = [];
+let feedbackEntries = [];
+let deleteFeedbackId = "";
+let pendingFeedbackActionId = "";
+let registrationPage = 1;
+let feedbackPage = 1;
 
 const backToAdminBtn = document.getElementById("backToAdminBtn");
 const adminName = document.getElementById("adminName");
@@ -21,9 +32,21 @@ const pendingCount = document.getElementById("pendingCount");
 const tableMeta = document.getElementById("tableMeta");
 const pageError = document.getElementById("pageError");
 const registrationList = document.getElementById("registrationList");
+const registrationTablePagination = document.getElementById("registrationTablePagination");
 const genderChartCanvas = document.getElementById("genderChart");
 const genderChartMeta = document.getElementById("genderChartMeta");
 const genderChartEmpty = document.getElementById("genderChartEmpty");
+const feedbackCount = document.getElementById("feedbackCount");
+const visibleCount = document.getElementById("visibleCount");
+const hiddenCount = document.getElementById("hiddenCount");
+const feedbackTableMeta = document.getElementById("feedbackTableMeta");
+const feedbackError = document.getElementById("feedbackError");
+const feedbackList = document.getElementById("feedbackList");
+const feedbackTablePagination = document.getElementById("feedbackTablePagination");
+const deleteFeedbackModal = document.getElementById("deleteFeedbackModal");
+const deleteFeedbackMessage = document.getElementById("deleteFeedbackMessage");
+const confirmDeleteFeedback = document.getElementById("confirmDeleteFeedback");
+const cancelDeleteFeedback = document.getElementById("cancelDeleteFeedback");
 
 function normalizeString(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -46,7 +69,7 @@ function getEventIdFromUrl() {
 function buildAdminIndexUrl(eventId = currentEventId) {
   const normalizedEventId = normalizeString(eventId);
   return normalizedEventId
-    ? `index.html?eventId=${encodeURIComponent(normalizedEventId)}`
+    ? "index.html"
     : "index.html";
 }
 
@@ -95,14 +118,38 @@ function setStats(total, checked) {
   pendingCount.innerText = String(Math.max(0, total - checked));
 }
 
+function setFeedbackStats(total, visible, hidden) {
+  feedbackCount.innerText = String(total);
+  visibleCount.innerText = String(visible);
+  hiddenCount.innerText = String(hidden);
+}
+
 function renderLoadingState() {
   pageError.innerText = "";
+  feedbackError.innerText = "";
   tableMeta.innerText = "Đang tải dữ liệu đăng ký từ hệ thống sự kiện.";
   genderChartMeta.innerText = "Biểu đồ chỉ tính những sinh viên đã check-in thành công.";
   genderChartEmpty.hidden = true;
+  feedbackTableMeta.innerText = "Đang tải dữ liệu đánh giá từ hệ thống sự kiện.";
+  setFeedbackStats(0, 0, 0);
+  renderPaginationControls(
+    registrationTablePagination,
+    paginateItems([], registrationPage),
+    { itemLabel: "lượt đăng ký" },
+  );
+  renderPaginationControls(
+    feedbackTablePagination,
+    paginateItems([], feedbackPage),
+    { itemLabel: "đánh giá" },
+  );
   registrationList.innerHTML = `
     <tr>
       <td colspan="7">Đang tải dữ liệu đăng ký và điểm danh.</td>
+    </tr>
+  `;
+  feedbackList.innerHTML = `
+    <tr>
+      <td colspan="7">Đang tải dữ liệu đánh giá.</td>
     </tr>
   `;
 }
@@ -117,12 +164,30 @@ function destroyGenderChart() {
 function renderEmptyState(message, description) {
   eventSummaryCard.hidden = true;
   setStats(0, 0);
+  setFeedbackStats(0, 0, 0);
   destroyGenderChart();
   genderChartEmpty.hidden = false;
   genderChartMeta.innerText = description;
   pageError.innerText = message;
+  feedbackError.innerText = "";
   tableMeta.innerText = description;
+  feedbackTableMeta.innerText = description;
+  renderPaginationControls(
+    registrationTablePagination,
+    paginateItems([], registrationPage),
+    { itemLabel: "lượt đăng ký" },
+  );
+  renderPaginationControls(
+    feedbackTablePagination,
+    paginateItems([], feedbackPage),
+    { itemLabel: "đánh giá" },
+  );
   registrationList.innerHTML = `
+    <tr>
+      <td colspan="7">${escapeHtml(description)}</td>
+    </tr>
+  `;
+  feedbackList.innerHTML = `
     <tr>
       <td colspan="7">${escapeHtml(description)}</td>
     </tr>
@@ -144,7 +209,18 @@ function renderEventSummary(event, eventRegistrations) {
       ? "Sự kiện này chưa có sinh viên đăng ký."
       : `Đang hiển thị ${eventRegistrations.length} lượt đăng ký của ${event.code}.`;
   setStats(eventRegistrations.length, checkedTotal);
-  document.title = `${event.code || "Sự kiện"} | Danh sách đăng ký`;
+  document.title = `${event.code || "Sự kiện"} | Chi tiết sự kiện`;
+}
+
+function renderFeedbackSummary(eventFeedback) {
+  const hiddenTotal = eventFeedback.filter((feedback) => feedback.isHidden).length;
+  const visibleTotal = Math.max(0, eventFeedback.length - hiddenTotal);
+
+  feedbackTableMeta.innerText =
+    eventFeedback.length === 0
+      ? "Sự kiện này chưa có đánh giá nào từ sinh viên."
+      : `Đang hiển thị ${eventFeedback.length} đánh giá. Có ${visibleTotal} lượt đang công khai và ${hiddenTotal} lượt đang ẩn.`;
+  setFeedbackStats(eventFeedback.length, visibleTotal, hiddenTotal);
 }
 
 function renderGenderChart(eventRegistrations) {
@@ -236,7 +312,16 @@ function renderGenderChart(eventRegistrations) {
 }
 
 function renderRegistrationRows(eventRegistrations) {
+  const registrationPagination = paginateItems(eventRegistrations, registrationPage);
+  const visibleRegistrations = registrationPagination.items;
+  registrationPage = registrationPagination.currentPage;
+
   if (eventRegistrations.length === 0) {
+    renderPaginationControls(
+      registrationTablePagination,
+      paginateItems([], registrationPage),
+      { itemLabel: "lượt đăng ký" },
+    );
     registrationList.innerHTML = `
       <tr>
         <td colspan="7">Sự kiện này hiện chưa có dữ liệu đăng ký hoặc điểm danh.</td>
@@ -245,7 +330,7 @@ function renderRegistrationRows(eventRegistrations) {
     return;
   }
 
-  registrationList.innerHTML = eventRegistrations
+  registrationList.innerHTML = visibleRegistrations
     .map((registration) => {
       const isCheckedIn =
         Boolean(registration.checkedInAt) || Boolean(registration.checkedIn);
@@ -271,6 +356,183 @@ function renderRegistrationRows(eventRegistrations) {
       `;
     })
     .join("");
+
+  renderPaginationControls(registrationTablePagination, registrationPagination, {
+    itemLabel: "lượt đăng ký",
+  });
+}
+
+function renderFeedbackRows(eventFeedback) {
+  const feedbackPagination = paginateItems(eventFeedback, feedbackPage);
+  const visibleFeedback = feedbackPagination.items;
+  feedbackPage = feedbackPagination.currentPage;
+
+  if (eventFeedback.length === 0) {
+    renderPaginationControls(
+      feedbackTablePagination,
+      paginateItems([], feedbackPage),
+      { itemLabel: "đánh giá" },
+    );
+    feedbackList.innerHTML = `
+      <tr>
+        <td colspan="7">Sự kiện này hiện chưa có đánh giá nào.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  feedbackList.innerHTML = visibleFeedback
+    .map((feedback) => {
+      const isHidden = Boolean(feedback.isHidden);
+      const toggleLabel = isHidden ? "Hiện đánh giá" : "Ẩn đánh giá";
+      const statusClass = isHidden
+        ? "feedback-status feedback-status-hidden"
+        : "feedback-status feedback-status-visible";
+      const statusLabel = isHidden ? "Đang ẩn" : "Công khai";
+      const hiddenNote = isHidden && feedback.hiddenAt
+        ? `Ẩn lúc ${window.ClubStorage.formatDateTime(feedback.hiddenAt)}`
+        : "";
+      const actionDisabled = pendingFeedbackActionId === feedback.id ? "disabled" : "";
+      const reviewerMeta = [feedback.studentId, feedback.studentCourse]
+        .filter(Boolean)
+        .join(" - ");
+
+      return `
+        <tr>
+          <td>
+            <div class="feedback-reviewer">
+              <strong>${escapeHtml(feedback.reviewerName || "Sinh viên")}</strong>
+              <span>${escapeHtml(reviewerMeta || "Chưa có MSSV/khóa")}</span>
+            </div>
+          </td>
+          <td>
+            <span class="feedback-rating">${escapeHtml(`${feedback.stars}/5 ★`)}</span>
+          </td>
+          <td>
+            <div class="feedback-content">
+              ${feedback.content
+                ? escapeHtml(feedback.content)
+                : '<span class="feedback-empty">Không có nội dung văn bản.</span>'}
+            </div>
+          </td>
+          <td class="feedback-image-cell">
+            ${feedback.image
+              ? `
+                <a href="${escapeHtml(feedback.image)}" target="_blank" rel="noreferrer" class="feedback-image-link">
+                  <img src="${escapeHtml(feedback.image)}" alt="Ảnh đính kèm của đánh giá" class="feedback-thumb" />
+                  <span>Xem ảnh</span>
+                </a>
+              `
+              : '<span class="feedback-no-image">Không có ảnh</span>'}
+          </td>
+          <td>${escapeHtml(window.ClubStorage.formatDateTime(feedback.createdAt))}</td>
+          <td>
+            <span class="${statusClass}">${escapeHtml(statusLabel)}</span>
+            ${hiddenNote ? `<div class="feedback-status-note">${escapeHtml(hiddenNote)}</div>` : ""}
+          </td>
+          <td>
+            <div class="feedback-actions">
+              <button
+                type="button"
+                class="secondary-btn"
+                ${actionDisabled}
+                onclick="toggleFeedbackVisibility('${escapeHtml(feedback.id)}', ${isHidden ? "false" : "true"})"
+              >
+                ${escapeHtml(toggleLabel)}
+              </button>
+              <button
+                type="button"
+                class="delete-btn"
+                ${actionDisabled}
+                onclick="deleteFeedback('${escapeHtml(feedback.id)}')"
+              >
+                Xóa đánh giá
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  renderPaginationControls(feedbackTablePagination, feedbackPagination, {
+    itemLabel: "đánh giá",
+  });
+}
+
+function closeDeleteFeedbackModal() {
+  deleteFeedbackModal.style.display = "none";
+  deleteFeedbackId = "";
+  deleteFeedbackMessage.innerText = "Bạn có chắc chắn muốn xóa đánh giá này không?";
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.innerText = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
+
+function handleFeedbackActionError(error) {
+  console.error(error);
+  feedbackError.innerText = error?.message || "Không thể cập nhật đánh giá lúc này.";
+}
+
+async function toggleFeedbackVisibility(feedbackId, nextHidden) {
+  const normalizedFeedbackId = normalizeString(feedbackId);
+
+  if (!normalizedFeedbackId) {
+    showToast("Không tìm thấy đánh giá cần cập nhật.");
+    return;
+  }
+
+  try {
+    pendingFeedbackActionId = normalizedFeedbackId;
+    feedbackError.innerText = "";
+    await window.ClubStorage.setEventFeedbackVisibility(
+      normalizedFeedbackId,
+      Boolean(nextHidden),
+    );
+    await loadPage();
+    showToast(Boolean(nextHidden) ? "Đã ẩn đánh giá." : "Đã cho hiển thị lại đánh giá.");
+  } catch (error) {
+    handleFeedbackActionError(error);
+  } finally {
+    pendingFeedbackActionId = "";
+    renderFeedbackRows(feedbackEntries);
+  }
+}
+
+function promptDeleteFeedback(feedbackId) {
+  const targetFeedback = feedbackEntries.find((feedback) => feedback.id === feedbackId);
+  deleteFeedbackId = normalizeString(feedbackId);
+  deleteFeedbackMessage.innerText = targetFeedback
+    ? `Bạn có chắc chắn muốn xóa đánh giá của "${targetFeedback.reviewerName}" không?`
+    : "Bạn có chắc chắn muốn xóa đánh giá này không?";
+  deleteFeedbackModal.style.display = "flex";
+}
+
+async function confirmDeleteFeedbackAction() {
+  if (!deleteFeedbackId) {
+    return;
+  }
+
+  try {
+    pendingFeedbackActionId = deleteFeedbackId;
+    feedbackError.innerText = "";
+    await window.ClubStorage.deleteEventFeedback(deleteFeedbackId);
+    await loadPage();
+    showToast("Đã xóa đánh giá.");
+    closeDeleteFeedbackModal();
+  } catch (error) {
+    handleFeedbackActionError(error);
+  } finally {
+    pendingFeedbackActionId = "";
+    renderFeedbackRows(feedbackEntries);
+  }
 }
 
 async function loadPage() {
@@ -291,9 +553,10 @@ async function loadPage() {
     return;
   }
 
-  const [event, allRegistrations] = await Promise.all([
+  const [event, allRegistrations, allFeedback] = await Promise.all([
     window.ClubStorage.getEventById(currentEventId),
     window.ClubStorage.getRegistrations({ eventId: currentEventId }),
+    window.ClubStorage.getFeedbackEntries({ eventId: currentEventId }),
   ]);
 
   if (!event) {
@@ -304,12 +567,16 @@ async function loadPage() {
     return;
   }
 
-  const eventRegistrations = window.ClubStorage.sortRegistrations(allRegistrations);
+  registrationEntries = window.ClubStorage.sortRegistrations(allRegistrations);
+  feedbackEntries = window.ClubStorage.sortFeedbackEntries(allFeedback);
 
   pageError.innerText = "";
-  renderEventSummary(event, eventRegistrations);
-  renderGenderChart(eventRegistrations);
-  renderRegistrationRows(eventRegistrations);
+  feedbackError.innerText = "";
+  renderEventSummary(event, registrationEntries);
+  renderGenderChart(registrationEntries);
+  renderRegistrationRows(registrationEntries);
+  renderFeedbackSummary(feedbackEntries);
+  renderFeedbackRows(feedbackEntries);
 }
 
 function handleAsyncError(error) {
@@ -324,12 +591,60 @@ backToAdminBtn.addEventListener("click", function onBackToAdminClick() {
   window.location.href = buildAdminIndexUrl();
 });
 
+confirmDeleteFeedback.addEventListener("click", function onConfirmDeleteFeedback() {
+  confirmDeleteFeedbackAction().catch(handleFeedbackActionError);
+});
+
+cancelDeleteFeedback.addEventListener("click", function onCancelDeleteFeedback() {
+  closeDeleteFeedbackModal();
+});
+
+registrationTablePagination.addEventListener("click", function onRegistrationPaginationClick(event) {
+  const targetButton = event.target.closest("[data-pagination-action]");
+
+  if (!(targetButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const action = normalizeString(targetButton.dataset.paginationAction);
+  const totalPages = Number(registrationTablePagination.dataset.totalPages) || 1;
+  registrationPage = getNextPageFromAction(action, registrationPage, totalPages);
+  renderRegistrationRows(registrationEntries);
+});
+
+feedbackTablePagination.addEventListener("click", function onFeedbackPaginationClick(event) {
+  const targetButton = event.target.closest("[data-pagination-action]");
+
+  if (!(targetButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const action = normalizeString(targetButton.dataset.paginationAction);
+  const totalPages = Number(feedbackTablePagination.dataset.totalPages) || 1;
+  feedbackPage = getNextPageFromAction(action, feedbackPage, totalPages);
+  renderFeedbackRows(feedbackEntries);
+});
+
 window.addEventListener("focus", function onFocus() {
   loadPage().catch(handleAsyncError);
+});
+
+window.addEventListener("click", function onWindowClick(event) {
+  if (event.target === deleteFeedbackModal) {
+    closeDeleteFeedbackModal();
+  }
 });
 
 window.ClubAuth.subscribe(function onAuthChange() {
   loadPage().catch(handleAsyncError);
 });
+
+window.toggleFeedbackVisibility = function handleToggleFeedbackVisibility(feedbackId, nextHidden) {
+  toggleFeedbackVisibility(feedbackId, nextHidden).catch(handleFeedbackActionError);
+};
+
+window.deleteFeedback = function handleDeleteFeedback(feedbackId) {
+  promptDeleteFeedback(feedbackId);
+};
 
 loadPage().catch(handleAsyncError);

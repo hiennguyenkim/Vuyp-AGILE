@@ -90,6 +90,8 @@
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #f7fbff 100%);
   border: 1px solid var(--color-border);
+  display: grid;
+  gap: 14px;
 }
 
 .events-highlight-grid {
@@ -129,6 +131,20 @@
 .highlight-metric-wide span,
 .highlight-metric-wide strong {
   color: white;
+}
+
+.events-support-panel {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.events-support-note {
+  color: var(--color-text-soft);
+  line-height: 1.7;
 }
 
 .events-feed-panel {

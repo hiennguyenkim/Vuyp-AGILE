@@ -59,7 +59,8 @@
 
 .event-summary-card,
 .gender-chart-section,
-.registration-table-section {
+.registration-table-section,
+.feedback-table-section {
   padding: 28px;
 }
 
@@ -187,6 +188,144 @@
   line-height: 1.7;
 }
 
+.feedback-table td {
+  vertical-align: top;
+}
+
+.feedback-reviewer {
+  display: grid;
+  gap: 4px;
+}
+
+.feedback-reviewer strong {
+  color: var(--color-brand-strong);
+}
+
+.feedback-reviewer span {
+  color: var(--color-text-soft);
+  font-size: 13px;
+}
+
+.feedback-rating {
+  font-weight: 700;
+  color: #b7791f;
+}
+
+.feedback-content {
+  max-width: 360px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.feedback-empty {
+  color: var(--color-text-soft);
+  font-style: italic;
+}
+
+.feedback-image-cell {
+  min-width: 116px;
+}
+
+.feedback-image-link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--color-brand-strong);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.feedback-thumb {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.feedback-no-image {
+  color: var(--color-text-soft);
+}
+
+.feedback-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.feedback-status-visible {
+  background: rgba(49, 153, 87, 0.14);
+  color: #1f7c45;
+}
+
+.feedback-status-hidden {
+  background: rgba(133, 14, 53, 0.12);
+  color: var(--color-accent);
+}
+
+.feedback-status-note {
+  margin-top: 8px;
+  color: var(--color-text-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.feedback-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 150px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 33, 55, 0.45);
+  justify-content: center;
+  align-items: center;
+  z-index: 40;
+}
+
+.modal-content {
+  background: white;
+  padding: 28px;
+  border-radius: 24px;
+  width: min(360px, calc(100% - 30px));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin-bottom: 12px;
+  color: var(--color-accent);
+  font-size: 24px;
+}
+
+.modal-content p {
+  color: var(--color-text-soft);
+  line-height: 1.7;
+}
+
+.modal-buttons {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-buttons button {
+  min-width: 120px;
+}
+
 .admin-table td:last-child {
   white-space: nowrap;
 }
@@ -230,7 +369,8 @@
   .registrations-topbar,
   .event-summary-card,
   .gender-chart-section,
-  .registration-table-section {
+  .registration-table-section,
+  .feedback-table-section {
     padding: 20px;
   }
 
@@ -240,6 +380,14 @@
   }
 
   .topbar-btn {
+    width: 100%;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .modal-buttons button {
     width: 100%;
   }
 }

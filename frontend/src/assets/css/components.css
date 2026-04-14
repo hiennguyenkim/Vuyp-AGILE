@@ -249,6 +249,39 @@ button:hover,
   overflow-x: auto;
 }
 
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.table-pagination[hidden] {
+  display: none !important;
+}
+
+.table-pagination-status {
+  color: var(--color-text-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.table-pagination-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.table-pagination-btn {
+  min-width: 120px;
+  padding: 10px 16px;
+}
+
 .toast {
   position: fixed;
   top: 24px;

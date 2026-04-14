@@ -126,6 +126,13 @@ body {
 }
 .qr-event-select:focus { border-color: var(--qr-accent); }
 
+.picker-note {
+  flex-basis: 100%;
+  color: var(--qr-muted);
+  font-size: 0.84rem;
+  margin-top: -8px;
+}
+
 .event-info {
   background: rgba(99, 130, 255, 0.1);
   border: 1px solid rgba(99, 130, 255, 0.25);

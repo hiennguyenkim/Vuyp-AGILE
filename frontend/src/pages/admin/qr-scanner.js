@@ -86,6 +86,41 @@ const registrationColumns = {
   studentName: CLUB_SUPABASE_CONFIG.registration.studentNameColumn,
 };
 
+function isCheckInEligibleEvent(event) {
+  if (!event || typeof event !== "object") {
+    return false;
+  }
+
+  if (typeof window.ClubStorage?.isUpcomingEvent === "function") {
+    return window.ClubStorage.isUpcomingEvent(event);
+  }
+
+  const endTime = Date.parse(event?.end || "");
+
+  if (Number.isFinite(endTime)) {
+    return endTime >= Date.now();
+  }
+
+  const startTime = Date.parse(event?.start || "");
+
+  if (!Number.isFinite(startTime)) {
+    return true;
+  }
+
+  return startTime >= Date.now();
+}
+
+function getEventTimingLabel(event) {
+  const now = Date.now();
+  const startTime = Date.parse(event?.start || "");
+
+  if (Number.isFinite(startTime) && startTime <= now) {
+    return "Đang diễn ra";
+  }
+
+  return "Sắp diễn ra";
+}
+
 async function ensureSupabaseClient() {
   const configError = getSupabaseConfigError();
 
@@ -132,13 +167,36 @@ function extractStudentId(rawValue) {
 // ── Load events into select ───────────────────────────────────
 async function loadEvents() {
   try {
-    events = await window.ClubStorage.getEvents();
+    if (typeof window.ClubStorage?.getUpcomingEvents === "function") {
+      events = await window.ClubStorage.getUpcomingEvents();
+    } else {
+      const allEvents = await window.ClubStorage.getEvents();
+      events = allEvents.filter(isCheckInEligibleEvent);
+    }
   } catch (e) {
     events = [];
   }
 
-  eventSelect.innerHTML = `<option value="">-- Chọn sự kiện --</option>` +
-    events.map(ev => `<option value="${ev.id}">${ev.code} · ${ev.name}</option>`).join("");
+  if (events.length === 0) {
+    eventSelect.innerHTML =
+      `<option value="">-- Không có sự kiện sắp hoặc đang diễn ra --</option>`;
+    eventInfo.hidden = true;
+    updateStats(0, 0);
+    resetResult();
+    return;
+  }
+
+  eventSelect.innerHTML =
+    `<option value="">-- Chọn sự kiện sắp hoặc đang diễn ra --</option>` +
+    events
+      .map((ev) => {
+        return (
+          `<option value="${ev.id}">` +
+          `${ev.code} · ${ev.name} · ${getEventTimingLabel(ev)}` +
+          `</option>`
+        );
+      })
+      .join("");
 }
 
 function normalizeEvent(row) {
@@ -166,6 +224,21 @@ eventSelect.addEventListener("change", async () => {
   }
 
   const ev = events.find(e => e.id === selectedEventId);
+  if (!ev || !isCheckInEligibleEvent(ev)) {
+    selectedEventId = "";
+    eventSelect.value = "";
+    eventInfo.hidden = true;
+    updateStats(0, 0);
+    resetResult();
+    setResult(
+      "warn",
+      "⚠️",
+      "Sự kiện không hợp lệ để điểm danh",
+      "Chỉ có thể chọn sự kiện sắp diễn ra hoặc đang diễn ra để thực hiện check-in.",
+    );
+    return;
+  }
+
   if (ev) {
     eventInfoText.textContent =
       `${ev.name} · ${window.ClubStorage.formatDateRange(ev.start, ev.end)} · ` +
@@ -397,6 +470,23 @@ manualStudentId.addEventListener("keydown", (e) => {
 async function processCheckIn(studentId) {
   if (!selectedEventId) {
     setResult("warn", "⚠️", "Chưa chọn sự kiện", "Hãy chọn sự kiện cần điểm danh trước khi quét.");
+    return;
+  }
+
+  const selectedEvent = events.find((event) => event.id === selectedEventId);
+
+  if (!selectedEvent || !isCheckInEligibleEvent(selectedEvent)) {
+    selectedEventId = "";
+    eventSelect.value = "";
+    eventInfo.hidden = true;
+    updateStats(0, 0);
+    pendingCheckIn = null;
+    setResult(
+      "error",
+      "⛔",
+      "Không thể điểm danh sự kiện đã kết thúc",
+      "Vui lòng chọn một sự kiện sắp diễn ra hoặc đang diễn ra để tiếp tục.",
+    );
     return;
   }
 

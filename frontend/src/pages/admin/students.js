@@ -1,4 +1,9 @@
 import "../../services/auth.js";
+import {
+  getNextPageFromAction,
+  paginateItems,
+  renderPaginationControls,
+} from "../../utils/pagination.js";
 
 const { escapeHtml } = window.AppUtils;
 
@@ -13,6 +18,7 @@ let deleteTargetIds = [];
 let selectedStudentIds = new Set();
 let studentFormBusy = false;
 let deleteStudentBusy = false;
+let studentPage = 1;
 
 const adminName = document.getElementById("adminName");
 const adminRole = document.getElementById("adminRole");
@@ -30,6 +36,7 @@ const bulkDeleteStudentsBtn = document.getElementById("bulkDeleteStudentsBtn");
 const studentList = document.getElementById("studentList");
 const studentSortButtons = [...document.querySelectorAll(".student-sort-button")];
 const studentTableMeta = document.getElementById("studentTableMeta");
+const studentTablePagination = document.getElementById("studentTablePagination");
 const studentError = document.getElementById("studentError");
 const studentSuccess = document.getElementById("studentSuccess");
 const studentModal = document.getElementById("studentModal");
@@ -202,6 +209,10 @@ function getVisibleStudents() {
   return [...getFilteredStudents()].sort(compareStudents);
 }
 
+function getPaginatedStudents() {
+  return paginateItems(getVisibleStudents(), studentPage);
+}
+
 function sortLabelValues(values) {
   return [...values].sort((leftValue, rightValue) =>
     String(leftValue).localeCompare(String(rightValue), "vi", {
@@ -326,8 +337,12 @@ function updateSortButtons() {
 
 function renderStudents() {
   const filteredStudents = getVisibleStudents();
+  const studentPagination = paginateItems(filteredStudents, studentPage);
+  const visibleStudents = studentPagination.items;
+  studentPage = studentPagination.currentPage;
+
   updateStats(filteredStudents);
-  updateSelectionState(filteredStudents);
+  updateSelectionState(visibleStudents);
   updateSortButtons();
 
   if (filteredStudents.length === 0) {
@@ -335,6 +350,11 @@ function renderStudents() {
     studentTableMeta.innerText = filterSummary
       ? `Khong tim thay sinh vien phu hop voi bo loc: ${filterSummary}.`
       : "He thong hien chua co tai khoan sinh vien nao.";
+    renderPaginationControls(
+      studentTablePagination,
+      paginateItems([], studentPage),
+      { itemLabel: "sinh viên" },
+    );
     studentList.innerHTML = `
       <tr>
         <td colspan="8">${escapeHtml(studentTableMeta.innerText)}</td>
@@ -348,7 +368,7 @@ function renderStudents() {
     ? `Dang hien thi ${filteredStudents.length}/${students.length} sinh vien theo bo loc: ${filterSummary}.`
     : `Dang hien thi toan bo ${students.length} sinh vien trong he thong.`;
 
-  studentList.innerHTML = filteredStudents
+  studentList.innerHTML = visibleStudents
     .map((student) => {
       const isSelected = selectedStudentIds.has(student.id);
 
@@ -378,6 +398,10 @@ function renderStudents() {
       `;
     })
     .join("");
+
+  renderPaginationControls(studentTablePagination, studentPagination, {
+    itemLabel: "sinh viên",
+  });
 }
 
 async function loadStudents() {
@@ -598,7 +622,7 @@ async function confirmDeleteStudentAction() {
 }
 
 function handleSelectAllStudents() {
-  const visibleStudents = getVisibleStudents();
+  const visibleStudents = getPaginatedStudents().items;
   const shouldSelectAll = selectAllStudents.checked;
 
   visibleStudents.forEach((student) => {
@@ -640,7 +664,7 @@ function handleRowSelectionChange(event) {
     selectedStudentIds.delete(studentId);
   }
 
-  updateSelectionState(getVisibleStudents());
+  updateSelectionState(getPaginatedStudents().items);
 }
 
 function handleSortButtonClick(event) {
@@ -699,16 +723,19 @@ addStudentBtn.addEventListener("click", function onAddStudentClick() {
 
 studentSearchInput.addEventListener("input", function onSearchInput() {
   studentSearchTerm = studentSearchInput.value || "";
+  studentPage = 1;
   renderStudents();
 });
 
 studentCourseFilterSelect.addEventListener("change", function onCourseFilterChange() {
   studentCourseFilter = normalizeString(studentCourseFilterSelect.value);
+  studentPage = 1;
   renderStudents();
 });
 
 studentGenderFilterSelect.addEventListener("change", function onGenderFilterChange() {
   studentGenderFilter = normalizeString(studentGenderFilterSelect.value);
+  studentPage = 1;
   renderStudents();
 });
 
@@ -716,6 +743,19 @@ studentSortButtons.forEach((button) => {
   button.addEventListener("click", function onSortButtonClick(event) {
     handleSortButtonClick(event);
   });
+});
+
+studentTablePagination.addEventListener("click", function onStudentPaginationClick(event) {
+  const targetButton = event.target.closest("[data-pagination-action]");
+
+  if (!(targetButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const action = normalizeString(targetButton.dataset.paginationAction);
+  const totalPages = Number(studentTablePagination.dataset.totalPages) || 1;
+  studentPage = getNextPageFromAction(action, studentPage, totalPages);
+  renderStudents();
 });
 
 selectAllStudents.addEventListener("change", function onSelectAllChange() {
