@@ -145,6 +145,7 @@ CREATE POLICY "event_feedback_student_insert"
     AND COALESCE(is_hidden, FALSE) = FALSE
     AND hidden_at IS NULL
     AND hidden_by IS NULL
+    -- Sinh viên PHẢI đã check-in thực tế (AC: chỉ người tham gia được gửi đánh giá)
     AND EXISTS (
       SELECT 1
       FROM public.registrations
@@ -164,12 +165,6 @@ CREATE POLICY "event_feedback_student_insert"
           COALESCE(public.registrations.checked_in, FALSE) = TRUE
           OR public.registrations.checked_in_at IS NOT NULL
         )
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM public.events
-      WHERE public.events.id = public.event_feedback.event_id
-        AND public.events."end" <= NOW()
     )
   );
 

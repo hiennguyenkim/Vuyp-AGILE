@@ -374,6 +374,7 @@ function getEventColumns() {
       CLUB_SUPABASE_CONFIG.event.registeredColumn,
       "registered",
     ]),
+    rewardLink: uniqueValues(["reward_link", "rewardLink"]),
     speaker: uniqueValues([CLUB_SUPABASE_CONFIG.event.speakerColumn, "speaker"]),
     start: uniqueValues([
       CLUB_SUPABASE_CONFIG.event.startColumn,
@@ -606,6 +607,7 @@ function normalizeEventRow(row, registrationCount = 0) {
     location: normalizeString(pickFirst(row, eventColumns.location)),
     max,
     registered,
+    rewardLink: normalizeString(pickFirst(row, eventColumns.rewardLink)),
     createdAt: normalizeString(pickFirst(row, eventColumns.createdAt)),
     updatedAt: normalizeString(pickFirst(row, eventColumns.updatedAt)),
   };
@@ -980,6 +982,8 @@ function buildEventWritePayload(payload, options = {}) {
       1,
       normalizeNumber(payload?.max, 1),
     ),
+    // Link quà tặng / chứng nhận — có thể để trống
+    reward_link: normalizeString(payload?.rewardLink) || null,
   };
 
   if (options.includeCode) {

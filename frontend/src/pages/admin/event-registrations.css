@@ -59,10 +59,110 @@
 
 .event-summary-card,
 .gender-chart-section,
+.cohort-chart-section,
 .registration-table-section,
 .feedback-table-section {
   padding: 28px;
 }
+
+.event-summary-card {
+  display: grid;
+  gap: 22px;
+}
+
+.event-summary-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.event-summary-heading h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  color: var(--color-brand-strong);
+}
+
+.event-code-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--color-surface-tint);
+  color: var(--color-brand);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary-grid,
+.stats-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.summary-item label {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.summary-item span {
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-card {
+  padding: 22px;
+  text-align: center;
+  background: linear-gradient(135deg, #ffffff 0%, #eef5fb 100%);
+}
+
+.stat-card span {
+  display: block;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--color-brand-strong);
+}
+
+.stat-card small {
+  color: var(--color-text-soft);
+  font-size: 15px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
 
 .event-summary-card {
   display: grid;
@@ -168,7 +268,8 @@
   max-width: 460px;
 }
 
-.gender-chart-shell {
+.gender-chart-shell,
+.cohort-chart-shell {
   display: flex;
   justify-content: center;
 }
@@ -179,7 +280,15 @@
   min-height: 320px;
 }
 
-.gender-chart-empty {
+.cohort-chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  min-height: 320px;
+}
+
+.gender-chart-empty,
+.cohort-chart-empty {
   padding: 18px;
   border-radius: 18px;
   border: 1px dashed var(--color-border);
@@ -369,6 +478,7 @@
   .registrations-topbar,
   .event-summary-card,
   .gender-chart-section,
+  .cohort-chart-section,
   .registration-table-section,
   .feedback-table-section {
     padding: 20px;

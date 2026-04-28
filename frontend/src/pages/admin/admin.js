@@ -707,6 +707,7 @@ function setEditingEvent(event) {
     window.ClubStorage.toDateTimeLocalValue(event.end);
   document.getElementById("location").value = event.location;
   document.getElementById("max").value = event.max;
+  document.getElementById("rewardLink").value = event.rewardLink || "";
   document.getElementById("btnDeleteDetail").style.display = "block";
 }
 
@@ -918,6 +919,9 @@ async function handleFormSubmit(event) {
       document.getElementById("location").value,
     ),
     max: document.getElementById("max").value,
+    rewardLink: window.ClubStorage.normalizeString(
+      document.getElementById("rewardLink").value,
+    ),
   };
   const currentEvent = events.find((item) => item.id === eventId);
   const validationResult = validateEventPayload(payload, currentEvent);

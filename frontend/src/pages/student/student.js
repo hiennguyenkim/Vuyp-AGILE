@@ -36,12 +36,8 @@ let fbData = {};
 let currentFbEventId = null;
 
 function isFeedbackEligibleHistoryEntry(entry) {
-  const endTime = Date.parse(entry?.end || "");
-  const startTime = Date.parse(entry?.start || "");
-  const referenceTime = Number.isFinite(endTime) ? endTime : startTime;
-  const hasCheckedIn = Boolean(entry?.checkedIn) || Boolean(entry?.checkedInAt);
-
-  return hasCheckedIn && Number.isFinite(referenceTime) && referenceTime <= Date.now();
+  // AC: chỉ cần sinh viên đã check-in thực tế — không cần đợi sự kiện kết thúc
+  return Boolean(entry?.checkedIn) || Boolean(entry?.checkedInAt);
 }
 
 function getFeedbackEligibleHistoryEntries() {
@@ -76,10 +72,12 @@ function initFbData() {
   const previousValue = currentFbEventId || sel.value;
 
   eligibleEntries.forEach((entry) => {
+    const eventObj = getEventById(entry.eventId);
     nextFbData[entry.eventId] = {
       name: entry.eventName,
       location: entry.location,
       date: window.ClubStorage.formatDateRange(entry.start, entry.end),
+      rewardLink: eventObj?.rewardLink || "",
       reviews: [],
     };
   });
@@ -662,6 +660,28 @@ function onFbEventChange() {
       submitButton.textContent = getOwnFbReview(id)
         ? "Đã đánh giá"
         : "Gửi đánh giá";
+    }
+
+    const rewardBlock = document.getElementById("fbRewardBlock");
+    const ownReview = getOwnFbReview(id);
+    if (rewardBlock) {
+      if (ownReview && ev.rewardLink) {
+        rewardBlock.style.display = "block";
+        rewardBlock.innerHTML = `
+          <div class="reward-banner">
+            <h4 style="margin: 0 0 8px 0; color: #154a8a;">🎁 Món quà từ Ban tổ chức</h4>
+            <p style="margin: 0 0 16px 0; font-size: 0.95rem; color: #444;">
+              Cảm ơn bạn đã gửi đánh giá. Nhấn vào nút bên dưới để truy cập tài liệu / giấy chứng nhận.
+            </p>
+            <a href="${escapeHtml(ev.rewardLink)}" target="_blank" rel="noopener noreferrer" class="auth-btn" style="display:inline-block; text-decoration:none; text-align:center;">
+              Truy cập Liên kết
+            </a>
+          </div>
+        `;
+      } else {
+        rewardBlock.style.display = "none";
+        rewardBlock.innerHTML = "";
+      }
     }
 
     renderFbReviews(id);

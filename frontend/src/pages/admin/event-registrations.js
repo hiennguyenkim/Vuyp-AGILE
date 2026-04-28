@@ -9,6 +9,7 @@ import {
 let currentUser = null;
 let currentEventId = "";
 let genderChart = null;
+let cohortChart = null;
 let registrationEntries = [];
 let feedbackEntries = [];
 let deleteFeedbackId = "";
@@ -36,6 +37,9 @@ const registrationTablePagination = document.getElementById("registrationTablePa
 const genderChartCanvas = document.getElementById("genderChart");
 const genderChartMeta = document.getElementById("genderChartMeta");
 const genderChartEmpty = document.getElementById("genderChartEmpty");
+const cohortChartCanvas = document.getElementById("cohortChart");
+const cohortChartMeta = document.getElementById("cohortChartMeta");
+const cohortChartEmpty = document.getElementById("cohortChartEmpty");
 const feedbackCount = document.getElementById("feedbackCount");
 const visibleCount = document.getElementById("visibleCount");
 const hiddenCount = document.getElementById("hiddenCount");
@@ -130,6 +134,12 @@ function renderLoadingState() {
   tableMeta.innerText = "Đang tải dữ liệu đăng ký từ hệ thống sự kiện.";
   genderChartMeta.innerText = "Biểu đồ chỉ tính những sinh viên đã check-in thành công.";
   genderChartEmpty.hidden = true;
+  if (cohortChartMeta) {
+    cohortChartMeta.innerText = "Biểu đồ chỉ tính những sinh viên đã check-in thành công.";
+  }
+  if (cohortChartEmpty) {
+    cohortChartEmpty.hidden = true;
+  }
   feedbackTableMeta.innerText = "Đang tải dữ liệu đánh giá từ hệ thống sự kiện.";
   setFeedbackStats(0, 0, 0);
   renderPaginationControls(
@@ -161,13 +171,27 @@ function destroyGenderChart() {
   }
 }
 
+function destroyCohortChart() {
+  if (cohortChart) {
+    cohortChart.destroy();
+    cohortChart = null;
+  }
+}
+
 function renderEmptyState(message, description) {
   eventSummaryCard.hidden = true;
   setStats(0, 0);
   setFeedbackStats(0, 0, 0);
   destroyGenderChart();
+  destroyCohortChart();
   genderChartEmpty.hidden = false;
   genderChartMeta.innerText = description;
+  if (cohortChartEmpty) {
+    cohortChartEmpty.hidden = false;
+  }
+  if (cohortChartMeta) {
+    cohortChartMeta.innerText = description;
+  }
   pageError.innerText = message;
   feedbackError.innerText = "";
   tableMeta.innerText = description;
@@ -309,6 +333,85 @@ function renderGenderChart(eventRegistrations) {
       },
     },
   });
+}
+
+function renderCohortChart(eventRegistrations) {
+  destroyCohortChart();
+
+  const checkedInRegistrations = eventRegistrations.filter((registration) => {
+    return Boolean(registration.checkedInAt) || Boolean(registration.checkedIn);
+  });
+
+  const counts = checkedInRegistrations.reduce((result, registration) => {
+    const course = normalizeString(registration.studentCourse) || "Khác";
+    result[course] = (result[course] || 0) + 1;
+    return result;
+  }, {});
+
+  const labels = Object.keys(counts).sort((a, b) => {
+    if (a === "Khác") return 1;
+    if (b === "Khác") return -1;
+    return a.localeCompare(b);
+  });
+  const data = labels.map(label => counts[label]);
+  const chartTotal = data.reduce((sum, val) => sum + val, 0);
+
+  if (!window.Chart) {
+    if (cohortChartEmpty) cohortChartEmpty.hidden = false;
+    if (cohortChartMeta) cohortChartMeta.innerText = "Không thể tải thư viện biểu đồ Chart.js lúc này. Vui lòng thử tải lại trang.";
+    return;
+  }
+
+  if (chartTotal === 0) {
+    if (cohortChartEmpty) cohortChartEmpty.hidden = false;
+    if (cohortChartMeta) cohortChartMeta.innerText = "Chưa có sinh viên nào check-in thành công cho sự kiện này.";
+    return;
+  }
+
+  if (cohortChartEmpty) cohortChartEmpty.hidden = true;
+  if (cohortChartMeta) cohortChartMeta.innerText = `Biểu đồ đang tính ${chartTotal} lượt check-in của sự kiện này.`;
+
+  if (cohortChartCanvas) {
+    cohortChart = new window.Chart(cohortChartCanvas, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Số lượng sinh viên",
+            data: data,
+            backgroundColor: "#2563eb",
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const value = Number(context.parsed.y) || 0;
+                return `Số lượng: ${value} sinh viên`;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+            },
+          },
+        },
+      },
+    });
+  }
 }
 
 function renderRegistrationRows(eventRegistrations) {
@@ -574,6 +677,7 @@ async function loadPage() {
   feedbackError.innerText = "";
   renderEventSummary(event, registrationEntries);
   renderGenderChart(registrationEntries);
+  renderCohortChart(registrationEntries);
   renderRegistrationRows(registrationEntries);
   renderFeedbackSummary(feedbackEntries);
   renderFeedbackRows(feedbackEntries);
