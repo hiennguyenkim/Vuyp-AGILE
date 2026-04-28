@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -134,7 +134,15 @@
             <h2>Danh sách đăng ký và điểm danh</h2>
           </div>
 
-          <p id="tableMeta" class="table-meta"></p>
+          <div class="export-actions">
+            <p id="tableMeta" class="table-meta"></p>
+            <button type="button" id="exportExcelBtn" class="secondary-btn export-btn" title="Xuất danh sách điểm danh ra file Excel">
+              📊 Xuất Excel
+            </button>
+            <button type="button" id="exportPdfBtn" class="secondary-btn export-btn" title="Xuất danh sách điểm danh ra PDF">
+              📄 Xuất PDF
+            </button>
+          </div>
         </div>
 
         <div id="pageError" class="error"></div>

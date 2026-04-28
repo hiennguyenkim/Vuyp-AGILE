@@ -51,6 +51,8 @@ const deleteFeedbackModal = document.getElementById("deleteFeedbackModal");
 const deleteFeedbackMessage = document.getElementById("deleteFeedbackMessage");
 const confirmDeleteFeedback = document.getElementById("confirmDeleteFeedback");
 const cancelDeleteFeedback = document.getElementById("cancelDeleteFeedback");
+const exportExcelBtn = document.getElementById("exportExcelBtn");
+const exportPdfBtn = document.getElementById("exportPdfBtn");
 
 function normalizeString(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -691,6 +693,144 @@ function handleAsyncError(error) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────
+// EXPORT: Excel (CSV) và PDF
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Thu thập dữ liệu đã check-in từ registrationEntries.
+ * Nếu filter = false thì xuất toàn bộ đăng ký (kể cả chưa check-in).
+ */
+function getExportRows(checkedInOnly = true) {
+  const rows = checkedInOnly
+    ? registrationEntries.filter(r => Boolean(r.checkedInAt) || Boolean(r.checkedIn))
+    : registrationEntries;
+  return rows;
+}
+
+function getEventMeta() {
+  return {
+    code: normalizeString(summaryCode?.innerText) || "SK",
+    name: normalizeString(summaryName?.innerText) || "Su kien",
+  };
+}
+
+/** Xuất danh sách điểm danh ra CSV (mở bằng Excel) */
+function exportToExcel() {
+  const rows = getExportRows(true);
+  if (rows.length === 0) {
+    showToast("⚠️ Chưa có sinh viên nào check-in để xuất.");
+    return;
+  }
+
+  const { code, name } = getEventMeta();
+
+  // Header row
+  const csvRows = [
+    ["STT", "Họ tên", "MSSV", "Khóa", "Giới tính", "Thời gian đăng ký", "Thời gian điểm danh", "Trạng thái"],
+    ...rows.map((r, i) => [
+      i + 1,
+      r.studentName || "-",
+      r.studentId   || "-",
+      r.studentCourse || "-",
+      r.studentGender || "-",
+      r.registeredAt ? window.ClubStorage.formatDateTime(r.registeredAt) : "-",
+      r.checkedInAt  ? window.ClubStorage.formatDateTime(r.checkedInAt)  : "-",
+      Boolean(r.checkedIn) || Boolean(r.checkedInAt) ? "Đã điểm danh" : "Đã đăng ký",
+    ]),
+  ];
+
+  // Convert to CSV string (UTF-8 BOM for Excel)
+  const csvContent = csvRows
+    .map(row =>
+      row.map(cell =>
+        `"${String(cell ?? "").replace(/"/g, "\"\"")}"`,
+      ).join(",")
+    )
+    .join("\r\n");
+
+  const BOM = "\uFEFF"; // BOM để Excel mở đúng tiếng Việt
+  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `diem-danh_${code}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  showToast(`✅ Đã xuất ${rows.length} sinh viên ra file Excel.`);
+}
+
+/** Xuất danh sách điểm danh ra PDF (sử dụng print của trình duyệt) */
+function exportToPdf() {
+  const rows = getExportRows(true);
+  if (rows.length === 0) {
+    showToast("⚠️ Chưa có sinh viên nào check-in để xuất.");
+    return;
+  }
+
+  const { code, name } = getEventMeta();
+  const now = new Date().toLocaleDateString("vi-VN", { day:"2-digit", month:"2-digit", year:"numeric" });
+
+  const tableRows = rows.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${escapeHtml(r.studentName || "-")}</td>
+      <td>${escapeHtml(r.studentId || "-")}</td>
+      <td>${escapeHtml(r.studentCourse || "-")}</td>
+      <td>${escapeHtml(r.studentGender || "-")}</td>
+      <td>${r.checkedInAt ? escapeHtml(window.ClubStorage.formatDateTime(r.checkedInAt)) : "-"}</td>
+    </tr>
+  `).join("");
+
+  const html = `
+    <!doctype html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Danh sách điểm danh — ${escapeHtml(code)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #111; margin: 20mm; }
+        h1 { font-size: 16px; text-align: center; margin-bottom: 4px; }
+        .subtitle { text-align: center; font-size: 11px; color: #555; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #1c5da9; color: #fff; padding: 7px 8px; text-align: left; font-size: 11px; }
+        td { padding: 6px 8px; border-bottom: 1px solid #e0e0e0; font-size: 11px; }
+        tr:nth-child(even) td { background: #f5f8ff; }
+        .footer { margin-top: 16px; font-size: 10px; color: #888; text-align: right; }
+        @page { size: A4 landscape; margin: 15mm; }
+      </style>
+    </head>
+    <body>
+      <h1>DANH SÁCH ĐIỄM DANH SỰ KIỆN</h1>
+      <p class="subtitle">${escapeHtml(name)} &nbsp;|&nbsp; Mã: ${escapeHtml(code)} &nbsp;|&nbsp; Ngày xuất: ${now}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Họ tên</th>
+            <th>MSSV</th>
+            <th>Khóa</th>
+            <th>Giới tính</th>
+            <th>Thời gian điểm danh</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <p class="footer">Tổng số: ${rows.length} sinh viên đã điểm danh &nbsp;—&nbsp; HCMUE Events</p>
+    </body>
+    </html>
+  `;
+
+  const win = window.open("", "_blank", "width=1000,height=700");
+  if (!win) { showToast("⚠️ Vui lòng cho phép popup để xuất PDF."); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 600);
+  showToast(`✅ Đã chuẩn bị PDF cho ${rows.length} sinh viên.`);
+}
+
 backToAdminBtn.addEventListener("click", function onBackToAdminClick() {
   window.location.href = buildAdminIndexUrl();
 });
@@ -750,5 +890,13 @@ window.toggleFeedbackVisibility = function handleToggleFeedbackVisibility(feedba
 window.deleteFeedback = function handleDeleteFeedback(feedbackId) {
   promptDeleteFeedback(feedbackId);
 };
+
+if (exportExcelBtn) {
+  exportExcelBtn.addEventListener("click", exportToExcel);
+}
+
+if (exportPdfBtn) {
+  exportPdfBtn.addEventListener("click", exportToPdf);
+}
 
 loadPage().catch(handleAsyncError);
