@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Điểm danh QR | Quản trị viên</title>
+  <title>HCMUE Events — Điểm danh QR</title>
   <link rel="stylesheet" href="../../../src/assets/css/base.css" />
   <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
   <link rel="stylesheet" href="../../../src/assets/css/components.css" />
@@ -20,7 +20,7 @@
       </div>
     </div>
     <div class="qr-header-right">
-      <span id="adminBadge" class="admin-badge">Đang xác thực...</span>
+      <span id="adminBadge" class="admin-badge"></span>
     </div>
   </header>
 
@@ -33,7 +33,7 @@
       <select id="eventSelect" class="qr-event-select">
         <option value="">-- Đang tải danh sách sự kiện --</option>
       </select>
-      <small class="picker-note">Chỉ hiển thị những sự kiện sắp diễn ra hoặc đang diễn ra.</small>
+      <small class="picker-note">Hiển thị sự kiện sắp và đang diễn ra.</small>
       <div id="eventInfo" class="event-info" hidden>
         <span id="eventInfoText"></span>
       </div>
@@ -81,7 +81,7 @@
         <div class="manual-input-section">
           <p class="section-eyebrow">Nhập thủ công</p>
           <div class="manual-input-row">
-            <input type="text" id="manualStudentId" class="manual-input" placeholder="Nhập MSSV hoặc dán dữ liệu QR..." />
+            <input type="text" id="manualStudentId" class="manual-input" placeholder="Nhập MSSV..." />
             <button type="button" id="manualCheckInBtn" class="cam-btn cam-btn-primary">
               ✓ Check-in
             </button>
@@ -99,7 +99,7 @@
           <div class="result-icon" id="resultIcon">🎯</div>
           <div class="result-body">
             <div id="resultTitle" class="result-title">Chờ quét QR</div>
-            <div id="resultMessage" class="result-message">Hướng camera vào mã QR sinh viên hoặc nhập MSSV thủ công.</div>
+            <div id="resultMessage" class="result-message">Hướng camera vào mã QR sinh viên hoặc nhập MSSV để điểm danh.</div>
           </div>
         </div>
 

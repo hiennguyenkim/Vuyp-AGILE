@@ -75,6 +75,7 @@ function initFbData() {
     const eventObj = getEventById(entry.eventId);
     nextFbData[entry.eventId] = {
       name: entry.eventName,
+      code: eventObj?.code || entry.eventCode || "",
       location: entry.location,
       date: window.ClubStorage.formatDateRange(entry.start, entry.end),
       rewardLink: eventObj?.rewardLink || "",
@@ -165,6 +166,42 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/**
+ * Thay thế placeholder trong reward_link bằng thông tin sinh viên hiện tại.
+ * Admin nhúng vào URL khi tạo sự kiện:
+ *   {name}  → Họ tên sinh viên  (VD: Nguyễn Văn A)
+/**
+ * Thay thế placeholder trong reward_link bằng thông tin sinh viên và sự kiện.
+ *   {name}  → Họ tên sinh viên
+ *   {mssv}  → MSSV sinh viên
+ *   {email} → Email sinh viên
+ *   {code}  → Mã sự kiện (VD: EV001)
+ *   {event} → Tên sự kiện
+ *
+ * Admin có thể dùng đường dẫn nội bộ tắt:
+ *   /pages/certificate/?name={name}&mssv={mssv}&code={code}&event={event}
+ * Hệ thống sẽ tự chuyển sang relative path đúng.
+ */
+function personaliseRewardLink(rawLink, eventData = {}) {
+  if (!rawLink || !currentUser) return rawLink || "";
+
+  let link = rawLink
+    .replaceAll("{name}",  encodeURIComponent(currentUser.studentName  || ""))
+    .replaceAll("{mssv}",  encodeURIComponent(currentUser.studentId    || ""))
+    .replaceAll("{email}", encodeURIComponent(currentUser.email        || ""))
+    .replaceAll("{code}",  encodeURIComponent(eventData.code          || ""))
+    .replaceAll("{event}", encodeURIComponent(eventData.name          || ""));
+
+  // Chuyển đường dẫn nội bộ /pages/certificate/ → relative path đúng từ trang student
+  if (link.startsWith("/pages/certificate/")) {
+    link = "../certificate/" + link.slice("/pages/certificate/".length);
+  } else if (link.startsWith("/frontend/public/pages/certificate/")) {
+    link = "../certificate/" + link.slice("/frontend/public/pages/certificate/".length);
+  }
+
+  return link;
 }
 
 function isCurrentUserRegisteredForEvent(eventId) {
@@ -667,14 +704,15 @@ function onFbEventChange() {
     if (rewardBlock) {
       if (ownReview && ev.rewardLink) {
         rewardBlock.style.display = "block";
+        const personalisedLink = personaliseRewardLink(ev.rewardLink, ev);
         rewardBlock.innerHTML = `
           <div class="reward-banner">
-            <h4 style="margin: 0 0 8px 0; color: #154a8a;">🎁 Món quà từ Ban tổ chức</h4>
+            <h4 style="margin: 0 0 8px 0; color: #154a8a;">🎁 Giấy chứng nhận của bạn</h4>
             <p style="margin: 0 0 16px 0; font-size: 0.95rem; color: #444;">
-              Cảm ơn bạn đã gửi đánh giá. Nhấn vào nút bên dưới để truy cập tài liệu / giấy chứng nhận.
+              Cảm ơn <strong>${escapeHtml(currentUser?.studentName || "bạn")}</strong> đã gửi đánh giá. Nhấn vào nút bên dưới để nhận giấy chứng nhận cá nhân.
             </p>
-            <a href="${escapeHtml(ev.rewardLink)}" target="_blank" rel="noopener noreferrer" class="auth-btn" style="display:inline-block; text-decoration:none; text-align:center;">
-              Truy cập Liên kết
+            <a href="${escapeHtml(personalisedLink)}" target="_blank" rel="noopener noreferrer" class="auth-btn" style="display:inline-block; text-decoration:none; text-align:center;">
+              Nhận giấy chứng nhận
             </a>
           </div>
         `;

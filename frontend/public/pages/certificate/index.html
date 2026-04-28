@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giấy chứng nhận tham dự — HCMUE Events</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #1c5da9;
+      --blue-dk: #0f3d73;
+      --gold:    #b8860b;
+      --gold-lt: #f0d080;
+      --ink:     #1a1a2e;
+      --muted:   #5a5a7a;
+      --bg:      #f5f0e8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      color: var(--ink);
+    }
+
+    /* ── Toolbar (không in) ───────────────────────────────── */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-primary   { background: var(--blue); color: #fff; }
+    .btn-secondary { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+
+    /* ── Certificate card ─────────────────────────────────── */
+    .cert-wrap {
+      width: 100%;
+      max-width: 780px;
+    }
+
+    .cert {
+      background: #fff;
+      border: 2px solid var(--gold);
+      border-radius: 4px;
+      padding: 0;
+      box-shadow: 0 8px 40px rgba(0,0,0,.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative corner lines */
+    .cert::before, .cert::after {
+      content: '';
+      position: absolute;
+      border: 1.5px solid var(--gold-lt);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .cert::before { inset: 8px; }
+    .cert::after  { inset: 14px; }
+
+    /* Header band */
+    .cert-header {
+      background: linear-gradient(135deg, var(--blue-dk) 0%, var(--blue) 100%);
+      padding: 32px 48px 28px;
+      text-align: center;
+      position: relative;
+    }
+
+    .cert-header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .cert-header-logo img {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .cert-header-school {
+      text-align: left;
+    }
+
+    .cert-header-school .line1 {
+      font-size: 0.65rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.7);
+    }
+
+    .cert-header-school .line2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .cert-header-school .line3 {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,.6);
+    }
+
+    .cert-divider-gold {
+      width: 60px;
+      height: 2px;
+      background: var(--gold-lt);
+      margin: 16px auto 0;
+      border-radius: 2px;
+    }
+
+    /* Body */
+    .cert-body {
+      padding: 48px 64px 40px;
+      text-align: center;
+    }
+
+    .cert-label {
+      font-size: 0.65rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .cert-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--blue-dk);
+      margin-bottom: 32px;
+      line-height: 1.2;
+    }
+
+    .cert-body-text {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.7;
+    }
+
+    /* Recipient block */
+    .cert-recipient {
+      border-top: 1.5px solid var(--gold-lt);
+      border-bottom: 1.5px solid var(--gold-lt);
+      padding: 24px 32px;
+      margin: 0 0 32px;
+    }
+
+    .cert-recipient-label {
+      font-size: 0.7rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .cert-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .cert-mssv {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* Event block */
+    .cert-event-label {
+      font-size: 0.7rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .cert-event-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .cert-event-code {
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: #f0f4fb;
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+    }
+
+    /* Date line */
+    .cert-date {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    /* Signature area */
+    .cert-signatures {
+      display: flex;
+      justify-content: space-around;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .cert-sig {
+      text-align: center;
+      min-width: 140px;
+    }
+
+    .cert-sig-line {
+      width: 120px;
+      height: 1px;
+      background: var(--ink);
+      margin: 0 auto 8px;
+    }
+
+    .cert-sig-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .cert-sig-title {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    /* Footer band */
+    .cert-footer {
+      background: linear-gradient(135deg, var(--blue-dk), var(--blue));
+      padding: 12px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cert-footer-text {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,.6);
+      letter-spacing: .06em;
+    }
+
+    .cert-footer-code {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,.5);
+      font-family: monospace;
+    }
+
+    /* Error state */
+    .cert-error {
+      text-align: center;
+      padding: 64px 32px;
+      color: var(--muted);
+    }
+    .cert-error h2 { color: var(--ink); margin-bottom: 12px; }
+
+    /* ── PRINT ────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none !important; }
+      .cert { border: none; box-shadow: none; }
+      .cert::before, .cert::after { border-color: #ccc; }
+      .cert-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cert-footer  { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { size: A4 landscape; margin: 10mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <button class="btn btn-secondary" onclick="history.back()">← Quay lại</button>
+    <button class="btn btn-primary" onclick="window.print()">
+      ⬇ Tải PDF / In giấy chứng nhận
+    </button>
+  </div>
+
+  <!-- Certificate -->
+  <div class="cert-wrap">
+    <div class="cert" id="cert">
+
+      <!-- Header -->
+      <div class="cert-header">
+        <div class="cert-header-logo">
+          <img src="../../../src/assets/images/hcmue.png" alt="HCMUE" onerror="this.style.display='none'" />
+          <div class="cert-header-school">
+            <div class="line1">Socialist Republic of Vietnam</div>
+            <div class="line2">Trường Đại học Sư phạm TP. Hồ Chí Minh</div>
+            <div class="line3">Ho Chi Minh City University of Education</div>
+          </div>
+        </div>
+        <div class="cert-divider-gold"></div>
+      </div>
+
+      <!-- Body -->
+      <div class="cert-body" id="certBody">
+        <!-- Filled by JS -->
+      </div>
+
+      <!-- Footer -->
+      <div class="cert-footer">
+        <span class="cert-footer-text">HCMUE Events · hcmue.edu.vn</span>
+        <span class="cert-footer-code" id="certFooterCode"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function esc(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function formatDate(dateStr) {
+      const d = dateStr ? new Date(dateStr) : new Date();
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    function render() {
+      const p = new URLSearchParams(window.location.search);
+      const name  = decodeURIComponent(p.get("name")  || "").trim();
+      const mssv  = decodeURIComponent(p.get("mssv")  || "").trim();
+      const code  = decodeURIComponent(p.get("code")  || "").trim();
+      const event = decodeURIComponent(p.get("event") || "").trim();
+      const date  = p.get("date") || "";
+
+      const body   = document.getElementById("certBody");
+      const footer = document.getElementById("certFooterCode");
+
+      if (!name || !mssv) {
+        body.innerHTML = `
+          <div class="cert-error">
+            <h2>Không thể hiển thị giấy chứng nhận</h2>
+            <p>Liên kết không hợp lệ hoặc thiếu thông tin sinh viên.</p>
+          </div>`;
+        document.getElementById("toolbar").querySelector(".btn-primary").disabled = true;
+        return;
+      }
+
+      const displayDate = date ? formatDate(date) : formatDate();
+      const displayCode = code || "HCMUE-EVENT";
+
+      document.title = `Giấy chứng nhận — ${name}`;
+      footer.textContent = `Mã xác nhận: ${displayCode}-${mssv.replace(/\./g, "")}`;
+
+      body.innerHTML = `
+        <p class="cert-label">Chứng nhận</p>
+        <h1 class="cert-title">Giấy Chứng Nhận Tham Dự</h1>
+
+        <p class="cert-body-text">
+          Câu lạc bộ Sự kiện Sinh viên HCMUE trân trọng xác nhận sinh viên sau đây<br/>
+          đã tham gia và hoàn thành chương trình hoạt động:
+        </p>
+
+        <div class="cert-recipient">
+          <p class="cert-recipient-label">Sinh viên</p>
+          <div class="cert-name">${esc(name)}</div>
+          <div class="cert-mssv">Mã số sinh viên: <strong>${esc(mssv)}</strong></div>
+        </div>
+
+        <p class="cert-event-label">Tên chương trình</p>
+        <div class="cert-event-name">${esc(event || "Chương trình hoạt động sinh viên")}</div>
+        ${code ? `<div class="cert-event-code">${esc(code)}</div>` : ""}
+
+        <p class="cert-date">Ngày cấp: ${esc(displayDate)}</p>
+
+        <div class="cert-signatures">
+          <div class="cert-sig">
+            <div class="cert-sig-line"></div>
+            <div class="cert-sig-name">Ban Tổ chức</div>
+            <div class="cert-sig-title">CLB Sự kiện Sinh viên HCMUE</div>
+          </div>
+          <div class="cert-sig">
+            <div class="cert-sig-line"></div>
+            <div class="cert-sig-name">Trưởng ban Hoạt động</div>
+            <div class="cert-sig-title">Đoàn Thanh niên — Hội Sinh viên</div>
+          </div>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>

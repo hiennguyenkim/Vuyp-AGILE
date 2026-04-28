@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản trị sự kiện sinh viên</title>
+    <title>HCMUE Events — Quản trị sự kiện</title>
     <link rel="stylesheet" href="../../../src/assets/css/base.css" />
     <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
     <link rel="stylesheet" href="../../../src/assets/css/components.css" />
@@ -15,13 +15,13 @@
         <div class="admin-topbar-copy">
           <p class="section-eyebrow">Phân hệ quản trị HCMUE</p>
           <h1>Quản lý đăng ký và điểm danh sự kiện</h1>
-          <span class="admin-topbar-note">Tạo lịch hoạt động, theo dõi lượt đăng ký sinh viên và chuyển nhanh sang màn hình check-in QR.</span>
+          <span class="admin-topbar-note">Tạo, quản lý sự kiện và theo dõi đăng ký — tất cả trong một nơi.</span>
         </div>
 
         <div class="admin-session">
           <div class="admin-session-copy">
             <strong id="adminName">Quản trị viên</strong>
-            <span id="adminRole">Đang xác thực tài khoản</span>
+            <span id="adminRole"></span>
           </div>
 
           <div class="admin-session-actions">
@@ -29,7 +29,7 @@
               Quản Lý Sinh Viên
             </a>
             <button type="button" id="importStudentsBtn" class="secondary-btn topbar-btn">
-              Import sinh viên
+              Nhập dữ liệu sinh viên
             </button>
             <a href="qr-scanner.html" class="secondary-btn topbar-btn qr-scanner-link" id="qrScannerBtn">
               📷 QR Check-in
@@ -117,15 +117,18 @@
             </div>
 
             <div class="field-block field-block-full">
-              <label>🎁 Link Quà tặng / Chứng nhận</label>
+              <label>🎓 Link Giấy chứng nhận / Phần thưởng</label>
               <input
                 type="url"
                 id="rewardLink"
-                placeholder="https://drive.google.com/... (để trống nếu không có)"
+                placeholder="/pages/certificate/?name={name}&mssv={mssv}&code={code}&event={event}"
               />
               <p class="field-hint">
-                Sinh viên sẽ thấy nút nhận quà <strong>ngay sau khi gửi đánh giá thành công</strong>.
-                Nếu để trống, chỉ hiện thông báo "Cảm ơn bạn đã đánh giá".
+                Sinh viên nhận được liên kết này <strong>sau khi gửi đánh giá thành công</strong>.
+                Sử dụng trang chứng nhận tích hợp bằng cách dán:
+                <code>/pages/certificate/?name={name}&mssv={mssv}&code={code}&event={event}</code>
+                — hệ thống sẽ tự điền thông tin cá nhân của từng sinh viên.
+                Để trống nếu không có chứng nhận.
               </p>
             </div>
           </div>
@@ -173,9 +176,7 @@
           </div>
         </div>
 
-        <p id="eventTableMeta" class="event-table-meta">
-          Đang tải danh sách sự kiện từ hệ thống.
-        </p>
+        <p id="eventTableMeta" class="event-table-meta"></p>
 
         <div class="table-wrap">
           <table class="data-table admin-table">
@@ -235,7 +236,7 @@
 
             <tbody id="eventList">
               <tr>
-                <td colspan="9">Đang tải danh sách sự kiện.</td>
+                <td colspan="9">Đang tải dữ liệu...</td>
               </tr>
             </tbody>
           </table>
@@ -307,9 +308,9 @@
         <div class="detail-navigation-card">
           <div class="detail-navigation-copy">
             <p class="section-eyebrow">Dữ liệu sinh viên</p>
-            <h3 id="detailRegistrationTitle">Mở danh sách đăng ký và điểm danh riêng cho sự kiện này</h3>
+            <h3 id="detailRegistrationTitle">Danh sách đăng ký và điểm danh</h3>
             <p id="detailRegistrationSummary" class="detail-navigation-note">
-              Chọn một sự kiện để xem danh sách đăng ký và trạng thái điểm danh theo từng chương trình.
+              Xem và quản lý toàn bộ lượt đăng ký của sinh viên theo sự kiện.
             </p>
           </div>
 
@@ -321,9 +322,9 @@
         <div class="detail-navigation-card">
           <div class="detail-navigation-copy">
             <p class="section-eyebrow">Đánh giá sau sự kiện</p>
-            <h3 id="detailFeedbackTitle">Mở danh sách đánh giá riêng cho sự kiện này</h3>
+            <h3 id="detailFeedbackTitle">Danh sách đánh giá của sinh viên</h3>
             <p id="detailFeedbackSummary" class="detail-navigation-note">
-              Chọn một sự kiện để xem đánh giá của sinh viên, ẩn các nội dung chưa phù hợp hoặc xóa phản hồi khi cần.
+              Xem, kiểm duyệt và quản lý phản hồi của sinh viên sau sự kiện.
             </p>
           </div>
 
@@ -348,10 +349,9 @@
 
     <div id="importModal" class="modal">
       <div class="modal-content import-modal-content">
-        <h3>Import tài khoản sinh viên</h3>
+        <h3>Nhập tài khoản sinh viên</h3>
         <p class="import-modal-copy">
-          Tải file <strong>.xlsx</strong> hoặc <strong>.csv</strong> lên để tạo/cập nhật tài khoản cấp sẵn trong
-          Supabase Auth và bảng <code>profiles</code>.
+          Tải lên file <strong>.xlsx</strong> hoặc <strong>.csv</strong> để tạo hoặc cập nhật tài khoản sinh viên.
         </p>
 
         <form id="studentImportForm" class="import-form" novalidate>
@@ -359,10 +359,11 @@
             <label for="importFile">Tệp dữ liệu <span class="required">*</span></label>
             <input type="file" id="importFile" accept=".xlsx,.csv" required />
             <p class="field-hint">
-              Có thể tải file mẫu tại
+              Tải
               <a href="/backend/tools/student-import/template.xlsx" target="_blank" rel="noreferrer">
-                template.xlsx
-              </a>.
+                file mẫu (.xlsx)
+              </a>
+              để xem đúng định dạng cột cần thiết.
             </p>
           </div>
 
@@ -378,10 +379,10 @@
 
           <div class="modal-buttons import-modal-buttons">
             <button type="button" id="validateImportStudents" class="secondary-btn">
-              Kiểm tra file
+              Kiểm tra
             </button>
             <button type="submit" id="confirmImportStudents">
-              Import ngay
+              Xác nhận nhập
             </button>
             <button type="button" id="cancelImportStudents" class="secondary-btn">
               Đóng

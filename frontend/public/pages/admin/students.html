@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản Lý Sinh Viên | Quản trị viên</title>
+    <title>HCMUE Events — Quản lý sinh viên</title>
     <link rel="stylesheet" href="../../../src/assets/css/base.css" />
     <link rel="stylesheet" href="../../../src/assets/css/theme.css" />
     <link rel="stylesheet" href="../../../src/assets/css/components.css" />
@@ -22,13 +22,13 @@
 
           <h1>Quản Lý Sinh Viên</h1>
           <span class="students-topbar-note">
-            Theo dõi danh sách, tạo mới, cập nhật và xóa từng tài khoản sinh viên mà không cần chuẩn bị file Excel.
+            Xem, thêm mới, chỉnh sửa và quản lý tài khoản sinh viên.
           </span>
         </div>
 
         <div class="admin-session-summary">
           <strong id="adminName">Quản trị viên</strong>
-          <span id="adminRole">Đang xác thực tài khoản</span>
+          <span id="adminRole"></span>
         </div>
       </header>
 
@@ -106,9 +106,7 @@
         <div id="studentError" class="error"></div>
         <div id="studentSuccess" class="success"></div>
 
-        <p id="studentTableMeta" class="student-table-meta">
-          Đang tải danh sách sinh viên từ hệ thống.
-        </p>
+        <p id="studentTableMeta" class="student-table-meta"></p>
 
         <div class="table-wrap">
           <table class="data-table admin-table">
@@ -129,7 +127,7 @@
                 </th>
                 <th>
                   <button type="button" class="student-sort-button" data-sort-field="loginId">
-                    <span>Login ID</span>
+                    <span>Tên đăng nhập</span>
                     <span class="student-sort-indicator" aria-hidden="true"></span>
                   </button>
                 </th>
@@ -157,7 +155,7 @@
 
             <tbody id="studentList">
               <tr>
-                <td colspan="8">Đang tải danh sách sinh viên.</td>
+              <td colspan="8">Đang tải dữ liệu...</td>
               </tr>
             </tbody>
           </table>
@@ -171,7 +169,7 @@
       <div class="modal-content student-modal-content">
         <h3 id="studentModalTitle">Tạo tài khoản sinh viên</h3>
         <p id="studentModalCopy" class="student-modal-copy">
-          Tạo hoặc cập nhật tài khoản đăng nhập trong Supabase Auth và bảng <code>profiles</code>.
+          Điền đầy đủ thông tin để tạo hoặc cập nhật tài khoản sinh viên.
         </p>
 
         <form id="studentForm" class="student-form" novalidate>
@@ -189,7 +187,7 @@
             </div>
 
             <div class="field-block">
-              <label for="studentLoginIdInput">Login ID <span class="required">*</span></label>
+              <label for="studentLoginIdInput">Tên đăng nhập <span class="required">*</span></label>
               <input type="text" id="studentLoginIdInput" required />
             </div>
 
@@ -197,7 +195,7 @@
               <label for="studentEmailInput">Email</label>
               <input type="email" id="studentEmailInput" />
               <p class="field-hint">
-                Để trống nếu muốn hệ thống tự ghép email từ login ID và domain mặc định trong `.env`.
+                Để trống nếu muốn dùng email mặc định theo định dạng nhà trường.
               </p>
             </div>
 
@@ -220,7 +218,7 @@
               <label for="studentPasswordInput">Mật khẩu</label>
               <input type="password" id="studentPasswordInput" />
               <p id="studentPasswordHint" class="field-hint">
-                Để trống để dùng mật khẩu mặc định trong `.env`.
+                Để trống để dùng mật khẩu mặc định được thiết lập bởi nhà trường.
               </p>
             </div>
           </div>
